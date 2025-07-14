@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useSession, signOut } from "next-auth/react"
 import {
   Search,
   Bell,
@@ -20,22 +21,29 @@ import {
   Settings,
   User,
   Building2,
+  LogOut,
 } from "lucide-react"
+import Header from "./layout/Header"
 
 export default function Dashboard() {
   const [activeNav, setActiveNav] = useState("dashboard")
+  const { data: session, status } = useSession()
 
-  const sidebarItems = [
-    { id: "dashboard", label: "Dashboard", icon: Home },
-    { id: "documents", label: "All Documents", icon: FileText },
-    { id: "policies", label: "Policies", icon: BookOpen },
-    { id: "training", label: "Training", icon: Users },
-    { id: "hr", label: "HR Resources", icon: Building2 },
-    { id: "culture", label: "Culture Guide", icon: Star },
-    { id: "recent", label: "Recent", icon: Clock },
-    { id: "tags", label: "Tags", icon: Tag },
-    { id: "shared", label: "Shared", icon: Share2 },
-  ]
+  const handleSignOut = () => {
+    signOut({ callbackUrl: '/auth/signin' })
+  }
+
+  // Show loading while session is being fetched
+  if (status === 'loading') {
+    return (
+      <div className="min-vh-100 d-flex align-items-center justify-content-center">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    )
+  }
+
 
   const stats = [
     {
@@ -143,29 +151,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <nav className="p-3">
-          {sidebarItems.map((item) => {
-            const Icon = item.icon
-            return (
-              <button
-                key={item.id}
-                className={`btn w-100 text-start d-flex align-items-center mb-1 ${
-                  activeNav === item.id ? "btn-light" : "btn-link text-decoration-none text-dark"
-                }`}
-                onClick={() => setActiveNav(item.id)}
-                style={{
-                  backgroundColor: activeNav === item.id ? "#f8f9fa" : "transparent",
-                  border: "none",
-                  padding: "8px 12px",
-                }}
-              >
-                <Icon size={18} className="me-2" />
-                {item.label}
-              </button>
-            )
-          })}
-        </nav>
-
+        <Header activeNav={activeNav} setActiveNav={setActiveNav} />
         {/* User Profile */}
         <div className="mt-auto p-3 border-top">
           <div className="d-flex align-items-center">
@@ -176,10 +162,22 @@ export default function Dashboard() {
               <User size={16} className="text-white" />
             </div>
             <div className="flex-grow-1">
-              <div className="fw-semibold small">John Doe</div>
-              <div className="text-muted small">john@mertzcrew.com</div>
+              <div className="fw-semibold small">{session?.user?.name || 'User'}</div>
+              <div className="text-muted small">{session?.user?.email || 'user@mertzcrew.com'}</div>
+              <div className="text-muted small">{session?.user?.role || 'employee'}</div>
             </div>
-            <Settings size={16} className="text-muted" />
+            <div className="d-flex gap-1">
+              <button className="btn btn-link p-1" title="Settings">
+                <Settings size={16} className="text-muted" />
+              </button>
+              <button 
+                className="btn btn-link p-1" 
+                title="Sign Out"
+                onClick={handleSignOut}
+              >
+                <LogOut size={16} className="text-muted" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
