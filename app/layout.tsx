@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import BootstrapProvider from "@/components/bootstrap-provider"
+import AuthSessionProvider from "@/components/session-provider"
 
 import "./globals.css"
 
@@ -20,8 +21,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        {children}
-        <BootstrapProvider />
+        <AuthSessionProvider>
+          {children}
+          <BootstrapProvider />
+        </AuthSessionProvider>
       </body>
     </html>
   )
