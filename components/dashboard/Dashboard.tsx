@@ -23,14 +23,18 @@ import {
   Building2,
   LogOut,
 } from "lucide-react"
-import Header from "./layout/Header"
+import Header from "../layout/Header"
+import Button from './ui/Button';
+import RecentDocumentItem from './ui/RecentDocumentItem';
+import PopularDocumentItem from './ui/PopularDocumentItem';
+import StatCard from './ui/StatCard';
 
 export default function Dashboard() {
   const [activeNav, setActiveNav] = useState("dashboard")
   const { data: session, status } = useSession()
 
   const handleSignOut = () => {
-    signOut({ callbackUrl: '/auth/signin' })
+    signOut({ callbackUrl: '/' })
   }
 
   // Show loading while session is being fetched
@@ -239,28 +243,17 @@ export default function Dashboard() {
 
           {/* Stats Cards */}
           <div className="row mb-4">
-            {stats.map((stat, index) => {
-              const Icon = stat.icon
-              return (
-                <div key={index} className="col-md-3 mb-3">
-                  <div className="card h-100 border-0 shadow-sm">
-                    <div className="card-body">
-                      <div className="d-flex justify-content-between align-items-start mb-2">
-                        <div>
-                          <p className="text-muted mb-1 small">{stat.title}</p>
-                          <h3 className="mb-0">{stat.value}</h3>
-                        </div>
-                        <Icon size={24} className={stat.color} />
-                      </div>
-                      <div className="d-flex align-items-center">
-                        <TrendingUp size={12} className="text-success me-1" />
-                        <small className="text-success">{stat.change}</small>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
+            {stats.map((stat, index) => (
+              <div key={index} className="col-md-3 mb-3">
+                <StatCard
+                  title={stat.title}
+                  value={stat.value}
+                  change={stat.change}
+                  icon={stat.icon}
+                  color={stat.color}
+                />
+              </div>
+            ))}
           </div>
 
           {/* Content Sections */}
@@ -274,21 +267,13 @@ export default function Dashboard() {
                 </div>
                 <div className="card-body p-0">
                   {recentDocuments.map((doc, index) => (
-                    <div key={index} className="d-flex align-items-center p-3 border-bottom">
-                      <FileText size={16} className="text-muted me-3" />
-                      <div className="flex-grow-1">
-                        <h6 className="mb-1">{doc.title}</h6>
-                        <small className="text-muted">
-                          by {doc.author} • {doc.time}
-                        </small>
-                      </div>
-                      <div className="text-end">
-                        <small className="text-muted">{doc.views} views</small>
-                        <button className="btn btn-link p-1 ms-2">
-                          <MoreHorizontal size={16} />
-                        </button>
-                      </div>
-                    </div>
+                    <RecentDocumentItem
+                      key={index}
+                      title={doc.title}
+                      author={doc.author}
+                      time={doc.time}
+                      views={doc.views}
+                    />
                   ))}
                 </div>
               </div>
@@ -303,24 +288,13 @@ export default function Dashboard() {
                 </div>
                 <div className="card-body p-0">
                   {popularDocuments.map((doc, index) => (
-                    <div key={index} className="d-flex align-items-center p-3 border-bottom">
-                      <div
-                        className="rounded-circle d-flex align-items-center justify-content-center me-3 fw-bold text-white"
-                        style={{
-                          width: "24px",
-                          height: "24px",
-                          backgroundColor: "#ca1f27",
-                          fontSize: "12px",
-                        }}
-                      >
-                        #{doc.rank}
-                      </div>
-                      <div className="flex-grow-1">
-                        <h6 className="mb-1">{doc.title}</h6>
-                        <small className="text-muted">{doc.views} views</small>
-                      </div>
-                      <span className="badge bg-success">{doc.change}</span>
-                    </div>
+                    <PopularDocumentItem
+                      key={index}
+                      rank={doc.rank}
+                      title={doc.title}
+                      views={doc.views}
+                      change={doc.change}
+                    />
                   ))}
                 </div>
               </div>
@@ -336,28 +310,16 @@ export default function Dashboard() {
             <div className="card-body">
               <div className="row">
                 <div className="col-md-3 mb-3">
-                  <button className="btn btn-outline-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center p-3">
-                    <FileText size={24} className="mb-2" />
-                    <span>Create Policy</span>
-                  </button>
+                  <Button icon={<FileText />} label="Create Policy" />
                 </div>
                 <div className="col-md-3 mb-3">
-                  <button className="btn btn-outline-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center p-3">
-                    <Users size={24} className="mb-2" />
-                    <span>Add Training</span>
-                  </button>
+                  <Button icon={<Users />} label="Add Training" />
                 </div>
                 <div className="col-md-3 mb-3">
-                  <button className="btn btn-outline-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center p-3">
-                    <Building2 size={24} className="mb-2" />
-                    <span>HR Document</span>
-                  </button>
+                  <Button icon={<Building2 />} label="HR Document" />
                 </div>
                 <div className="col-md-3 mb-3">
-                  <button className="btn btn-outline-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center p-3">
-                    <Star size={24} className="mb-2" />
-                    <span>Culture Guide</span>
-                  </button>
+                  <Button icon={<Star />} label="Culture Guide" />
                 </div>
               </div>
             </div>
