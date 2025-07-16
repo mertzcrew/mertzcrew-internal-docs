@@ -51,6 +51,17 @@ const PolicySchema = new mongoose.Schema({
     type: String,
     trim: true
   }],
+  organization: { // This is the organization that the policy is for,  all is generic for all organizations
+    type: String,
+    required: [true, 'Organization is required'],
+    trim: true,
+    maxlength: [100, 'Organization cannot be more than 100 characters'],
+    enum: [
+      "all",
+      'mertzcrew',
+      'mertz_production'
+    ]
+  },
   attachments: [{
     filename: String,
     url: String,
