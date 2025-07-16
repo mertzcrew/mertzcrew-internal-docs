@@ -50,7 +50,17 @@ const UserSchema = new mongoose.Schema({
       'export_data'
     ]
   }],
-  
+  organization: {
+    type: String,
+    required: [true, 'Organization is required'],
+    trim: true,
+    maxlength: [100, 'Organization cannot be more than 100 characters'],
+    enum: [
+      'mertzcrew',
+      'mertz_production'
+    ]
+  },
+
   // Contact information
   phone: {
     type: String,
