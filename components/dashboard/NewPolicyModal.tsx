@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { Editor, EditorProvider } from 'react-simple-wysiwyg';
 
 interface NewPolicyModalProps {
   show: boolean;
@@ -29,14 +30,20 @@ export default function NewPolicyModal({ show, onClose, onSubmit }: NewPolicyMod
     if (e.target === modalRef.current) onClose();
   }
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm({ ...form, [e.target.name]: e.target.value });
+  }
+
+  function handleBodyChange(e: { target: { value: string } }) {
+    setForm({ ...form, body: e.target.value });
   }
 
   function validate(values: PolicyFormValues) {
     const errs: { [k: string]: string } = {};
     if (!values.title.trim()) errs.title = 'Title is required';
-    if (!values.body.trim()) errs.body = 'Body is required';
+    // Remove HTML tags and check if body has text
+    const bodyText = values.body.replace(/<[^>]+>/g, '').trim();
+    if (!bodyText) errs.body = 'Body is required';
     return errs;
   }
 
@@ -107,15 +114,14 @@ export default function NewPolicyModal({ show, onClose, onSubmit }: NewPolicyMod
               </div>
               <div className="mb-3">
                 <label className="form-label fw-semibold">Body</label>
-                <textarea
-                  name="body"
-                  className={`form-control${errors.body ? ' is-invalid' : ''}`}
-                  value={form.body}
-                  onChange={handleChange}
-                  rows={6}
-                  required
-                />
-                {errors.body && <div className="invalid-feedback">{errors.body}</div>}
+                <EditorProvider>
+                  <Editor
+                    value={form.body}
+                    onChange={handleBodyChange}
+                    placeholder="Enter policy body..."
+                  />
+                </EditorProvider>
+                {errors.body && <div className="invalid-feedback d-block">{errors.body}</div>}
               </div>
             </div>
             <div className="modal-footer">
