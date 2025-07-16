@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import BootstrapProvider from "@/components/bootstrap-provider"
 import AuthSessionProvider from "@/components/session-provider"
+import Sidebar from "@/components/layout/Sidebar"
 
 import "./globals.css"
 
@@ -22,7 +23,12 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <AuthSessionProvider>
-          {children}
+          <div className="d-flex min-vh-100">
+            <Sidebar />
+            <main className="flex-grow-1">
+              {children}
+            </main>
+          </div>
           <BootstrapProvider />
         </AuthSessionProvider>
       </body>

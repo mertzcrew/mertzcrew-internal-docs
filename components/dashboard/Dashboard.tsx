@@ -137,192 +137,139 @@ export default function Dashboard() {
   ]
 
   return (
-    <div className="d-flex min-vh-100" style={{ backgroundColor: "#f8f9fa" }}>
-      {/* Sidebar */}
-      <div className="bg-white border-end" style={{ width: "280px", minHeight: "100vh" }}>
-        <div className="p-3 border-bottom">
+    <div className="flex-grow-1">
+      {/* Top Navigation */}
+      <div className="bg-white border-bottom p-3">
+        <div className="d-flex justify-content-between align-items-center">
           <div className="d-flex align-items-center">
-            <div
-              className="rounded me-2 d-flex align-items-center justify-content-center"
-              style={{
-                width: "32px",
-                height: "32px",
-                backgroundColor: "#ca1f27",
-                color: "white",
-              }}
-            >
-              <Building2 size={18} />
-            </div>
-            <h5 className="mb-0 fw-bold">Mertz Control Room</h5>
+            <h4 className="mb-0 me-3">Dashboard</h4>
+            <span className="badge bg-light text-dark">Demo Mode</span>
           </div>
-        </div>
-
-        <Header activeNav={activeNav} setActiveNav={setActiveNav} />
-        {/* User Profile */}
-        <div className="mt-auto p-3 border-top">
-          <div className="d-flex align-items-center">
-            <div
-              className="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2"
-              style={{ width: "32px", height: "32px" }}
-            >
-              <User size={16} className="text-white" />
+          <div className="d-flex align-items-center gap-3">
+            <div className="position-relative" style={{ width: "300px" }}>
+              <Search
+                size={16}
+                className="position-absolute text-muted"
+                style={{ left: "12px", top: "50%", transform: "translateY(-50%)" }}
+              />
+              <input
+                type="text"
+                className="form-control ps-5"
+                placeholder="Search documentation..."
+                style={{ backgroundColor: "#f8f9fa", border: "1px solid #dee2e6" }}
+              />
             </div>
-            <div className="flex-grow-1">
-              <div className="fw-semibold small">{session?.user?.name || 'User'}</div>
-              <div className="text-muted small">{session?.user?.email || 'user@mertzcrew.com'}</div>
-              <div className="text-muted small">{session?.user?.role || 'employee'}</div>
-            </div>
-            <div className="d-flex gap-1">
-              <button className="btn btn-link p-1" title="Settings">
-                <Settings size={16} className="text-muted" />
-              </button>
-              <button 
-                className="btn btn-link p-1" 
-                title="Sign Out"
-                onClick={handleSignOut}
-              >
-                <LogOut size={16} className="text-muted" />
-              </button>
-            </div>
+            <button className="btn btn-outline-secondary">
+              <Bell size={16} />
+            </button>
+            <button className="btn text-white" style={{ backgroundColor: "#ca1f27" }} onClick={() => router.push('/new_policy')}>
+              <Plus size={16} className="me-1" />
+              New Document
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-grow-1">
-        {/* Top Navigation */}
-        <div className="bg-white border-bottom p-3">
-          <div className="d-flex justify-content-between align-items-center">
-            <div className="d-flex align-items-center">
-              <h4 className="mb-0 me-3">Dashboard</h4>
-              <span className="badge bg-light text-dark">Demo Mode</span>
-            </div>
-            <div className="d-flex align-items-center gap-3">
-              <div className="position-relative" style={{ width: "300px" }}>
-                <Search
-                  size={16}
-                  className="position-absolute text-muted"
-                  style={{ left: "12px", top: "50%", transform: "translateY(-50%)" }}
-                />
-                <input
-                  type="text"
-                  className="form-control ps-5"
-                  placeholder="Search documentation..."
-                  style={{ backgroundColor: "#f8f9fa", border: "1px solid #dee2e6" }}
-                />
+      <div className="p-4">
+        {/* Hero Section */}
+        <div className="rounded p-4 mb-4 text-white position-relative" style={{ backgroundColor: "#ca1f27" }}>
+          <div className="row align-items-center">
+            <div className="col-md-8">
+              <h2 className="mb-3">Welcome to Mertz Control Room</h2>
+              <p className="mb-4 opacity-90">
+                Your central hub for company resources. Access policies, training materials, HR documentation, and
+                culture guidelines all in one place.
+              </p>
+              <div className="d-flex gap-2">
+                <button className="btn btn-light">Create First Document</button>
+                <button className="btn btn-outline-light">Take Tour</button>
               </div>
-              <button className="btn btn-outline-secondary">
-                <Bell size={16} />
-              </button>
-              <button className="btn text-white" style={{ backgroundColor: "#ca1f27" }} onClick={() => router.push('/new_policy')}>
-                <Plus size={16} className="me-1" />
-                New Document
-              </button>
+            </div>
+            <div className="col-md-4 text-end">
+              <BookOpen size={120} className="opacity-25" />
             </div>
           </div>
         </div>
 
-        <div className="p-4">
-          {/* Hero Section */}
-          <div className="rounded p-4 mb-4 text-white position-relative" style={{ backgroundColor: "#ca1f27" }}>
-            <div className="row align-items-center">
-              <div className="col-md-8">
-                <h2 className="mb-3">Welcome to Mertz Control Room</h2>
-                <p className="mb-4 opacity-90">
-                  Your central hub for company resources. Access policies, training materials, HR documentation, and
-                  culture guidelines all in one place.
-                </p>
-                <div className="d-flex gap-2">
-                  <button className="btn btn-light">Create First Document</button>
-                  <button className="btn btn-outline-light">Take Tour</button>
-                </div>
+        {/* Stats Cards */}
+        <div className="row mb-4">
+          {stats.map((stat, index) => (
+            <div key={index} className="col-md-3 mb-3">
+              <StatCard
+                title={stat.title}
+                value={stat.value}
+                change={stat.change}
+                icon={stat.icon}
+                color={stat.color}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Content Sections */}
+        <div className="row">
+          {/* Recent Documents */}
+          <div className="col-md-7 mb-4">
+            <div className="card border-0 shadow-sm">
+              <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                <h5 className="mb-0">Recent Documents</h5>
+                <button className="btn btn-link text-decoration-none p-0">View All</button>
               </div>
-              <div className="col-md-4 text-end">
-                <BookOpen size={120} className="opacity-25" />
+              <div className="card-body p-0">
+                {recentDocuments.map((doc, index) => (
+                  <RecentDocumentItem
+                    key={index}
+                    title={doc.title}
+                    author={doc.author}
+                    time={doc.time}
+                    views={doc.views}
+                  />
+                ))}
               </div>
             </div>
           </div>
 
-          {/* Stats Cards */}
-          <div className="row mb-4">
-            {stats.map((stat, index) => (
-              <div key={index} className="col-md-3 mb-3">
-                <StatCard
-                  title={stat.title}
-                  value={stat.value}
-                  change={stat.change}
-                  icon={stat.icon}
-                  color={stat.color}
-                />
+          {/* Popular This Week */}
+          <div className="col-md-5 mb-4">
+            <div className="card border-0 shadow-sm">
+              <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                <h5 className="mb-0">Popular This Week</h5>
+                <button className="btn btn-link text-decoration-none p-0">View All</button>
               </div>
-            ))}
-          </div>
-
-          {/* Content Sections */}
-          <div className="row">
-            {/* Recent Documents */}
-            <div className="col-md-7 mb-4">
-              <div className="card border-0 shadow-sm">
-                <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                  <h5 className="mb-0">Recent Documents</h5>
-                  <button className="btn btn-link text-decoration-none p-0">View All</button>
-                </div>
-                <div className="card-body p-0">
-                  {recentDocuments.map((doc, index) => (
-                    <RecentDocumentItem
-                      key={index}
-                      title={doc.title}
-                      author={doc.author}
-                      time={doc.time}
-                      views={doc.views}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Popular This Week */}
-            <div className="col-md-5 mb-4">
-              <div className="card border-0 shadow-sm">
-                <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                  <h5 className="mb-0">Popular This Week</h5>
-                  <button className="btn btn-link text-decoration-none p-0">View All</button>
-                </div>
-                <div className="card-body p-0">
-                  {popularDocuments.map((doc, index) => (
-                    <PopularDocumentItem
-                      key={index}
-                      rank={doc.rank}
-                      title={doc.title}
-                      views={doc.views}
-                      change={doc.change}
-                    />
-                  ))}
-                </div>
+              <div className="card-body p-0">
+                {popularDocuments.map((doc, index) => (
+                  <PopularDocumentItem
+                    key={index}
+                    rank={doc.rank}
+                    title={doc.title}
+                    views={doc.views}
+                    change={doc.change}
+                  />
+                ))}
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Quick Actions */}
-          <div className="card border-0 shadow-sm">
-            <div className="card-header bg-white border-0">
-              <h5 className="mb-1">Quick Actions</h5>
-              <small className="text-muted">Common tasks to help you get started</small>
-            </div>
-            <div className="card-body">
-              <div className="row">
-                <div className="col-md-3 mb-3">
-                  <Button icon={<FileText />} label="Create Policy" />
-                </div>
-                <div className="col-md-3 mb-3">
-                  <Button icon={<Users />} label="Add Training" />
-                </div>
-                <div className="col-md-3 mb-3">
-                  <Button icon={<Building2 />} label="HR Document" />
-                </div>
-                <div className="col-md-3 mb-3">
-                  <Button icon={<Star />} label="Culture Guide" />
-                </div>
+        {/* Quick Actions */}
+        <div className="card border-0 shadow-sm">
+          <div className="card-header bg-white border-0">
+            <h5 className="mb-1">Quick Actions</h5>
+            <small className="text-muted">Common tasks to help you get started</small>
+          </div>
+          <div className="card-body">
+            <div className="row">
+              <div className="col-md-3 mb-3">
+                <Button icon={<FileText />} label="Create Policy" />
+              </div>
+              <div className="col-md-3 mb-3">
+                <Button icon={<Users />} label="Add Training" />
+              </div>
+              <div className="col-md-3 mb-3">
+                <Button icon={<Building2 />} label="HR Document" />
+              </div>
+              <div className="col-md-3 mb-3">
+                <Button icon={<Star />} label="Culture Guide" />
               </div>
             </div>
           </div>
