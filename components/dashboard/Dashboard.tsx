@@ -28,20 +28,15 @@ import Button from './ui/Button';
 import RecentDocumentItem from './ui/RecentDocumentItem';
 import PopularDocumentItem from './ui/PopularDocumentItem';
 import StatCard from './ui/StatCard';
-import NewPolicyModal from './NewPolicyModal';
+import { useRouter } from 'next/navigation';
 
 export default function Dashboard() {
   const [activeNav, setActiveNav] = useState("dashboard")
   const { data: session, status } = useSession()
-  const [showNewPolicyModal, setShowNewPolicyModal] = useState(false)
+  const router = useRouter();
 
   const handleSignOut = () => {
     signOut({ callbackUrl: '/' })
-  }
-
-  function handleNewPolicySubmit(values: any) {
-    // TODO: Replace with API call
-    console.log('New Policy:', values)
   }
 
   // Show loading while session is being fetched
@@ -219,7 +214,7 @@ export default function Dashboard() {
               <button className="btn btn-outline-secondary">
                 <Bell size={16} />
               </button>
-              <button className="btn text-white" style={{ backgroundColor: "#ca1f27" }} onClick={() => setShowNewPolicyModal(true)}>
+              <button className="btn text-white" style={{ backgroundColor: "#ca1f27" }} onClick={() => router.push('/new_policy')}>
                 <Plus size={16} className="me-1" />
                 New Document
               </button>
@@ -333,11 +328,6 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-      <NewPolicyModal
-        show={showNewPolicyModal}
-        onClose={() => setShowNewPolicyModal(false)}
-        onSubmit={handleNewPolicySubmit}
-      />
     </div>
   )
 }
