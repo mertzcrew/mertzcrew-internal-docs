@@ -2,7 +2,23 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { FileText, Search, Plus, Eye, Edit, Calendar, User } from "lucide-react";
+import { 
+  FileText, 
+  Search, 
+  Plus, 
+  Users, 
+  Building2, 
+  Star, 
+  Shield, 
+  Briefcase, 
+  Heart, 
+  Zap,
+  BookOpen,
+  Settings,
+  Globe,
+  Home,
+  Award
+} from "lucide-react";
 
 interface Policy {
   _id: string;
@@ -19,33 +35,57 @@ interface Policy {
   };
 }
 
-interface GroupedPolicies {
-  [category: string]: Policy[];
+interface CategoryStats {
+  name: string;
+  count: number;
+  icon: React.ElementType;
 }
 
 export default function PoliciesPage() {
   const [policies, setPolicies] = useState<Policy[]>([]);
-  const [groupedPolicies, setGroupedPolicies] = useState<GroupedPolicies>({});
+  const [categoryStats, setCategoryStats] = useState<CategoryStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+
+  // Icon mapping for categories
+  const getCategoryIcon = (categoryName: string) => {
+    const category = categoryName.toLowerCase();
+    if (category.includes('hr') || category.includes('human')) return Users;
+    if (category.includes('safety') || category.includes('security')) return Shield;
+    if (category.includes('training') || category.includes('education')) return BookOpen;
+    if (category.includes('culture') || category.includes('values')) return Heart;
+    if (category.includes('technology') || category.includes('tech')) return Zap;
+    if (category.includes('operations') || category.includes('ops')) return Settings;
+    if (category.includes('finance') || category.includes('accounting')) return Briefcase;
+    if (category.includes('marketing') || category.includes('brand')) return Star;
+    if (category.includes('legal') || category.includes('compliance')) return Building2;
+    if (category.includes('general') || category.includes('company')) return Home;
+    if (category.includes('award') || category.includes('recognition')) return Award;
+    if (category.includes('international') || category.includes('global')) return Globe;
+    return FileText; // Default icon
+  };
 
   useEffect(() => {
     fetchPolicies();
   }, []);
 
   useEffect(() => {
-    // Group policies by category
-    const grouped = policies.reduce((acc, policy) => {
+    // Group policies by category and create stats
+    const categoryCounts = policies.reduce((acc, policy) => {
       const category = policy.category || "Uncategorized";
-      if (!acc[category]) {
-        acc[category] = [];
-      }
-      acc[category].push(policy);
+      acc[category] = (acc[category] || 0) + 1;
       return acc;
-    }, {} as GroupedPolicies);
-    setGroupedPolicies(grouped);
+    }, {} as { [key: string]: number });
+
+    const stats = Object.keys(categoryCounts).map(category => ({
+      name: category,
+      count: categoryCounts[category],
+      icon: getCategoryIcon(category)
+    }));
+
+    setCategoryStats(stats);
   }, [policies]);
 
   const fetchPolicies = async () => {
@@ -67,26 +107,13 @@ export default function PoliciesPage() {
     }
   };
 
-  const filteredGroupedPolicies = Object.keys(groupedPolicies).reduce((acc, category) => {
-    const filteredPolicies = groupedPolicies[category].filter(policy =>
-      policy.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      policy.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      policy.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      policy.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+  const filteredCategories = categoryStats.filter(category =>
+    category.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-    if (filteredPolicies.length > 0) {
-      acc[category] = filteredPolicies;
-    }
-    return acc;
-  }, {} as GroupedPolicies);
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+  const handleCategoryClick = (categoryName: string) => {
+    const encodedCategory = encodeURIComponent(categoryName);
+    router.push(`/policies/${encodedCategory}`);
   };
 
   if (loading) {
@@ -115,9 +142,9 @@ export default function PoliciesPage() {
       <div className="bg-white border-bottom p-3">
         <div className="d-flex justify-content-between align-items-center">
           <div>
-            <h4 className="mb-0">Policies</h4>
+            <h4 className="mb-0">Policy Categories</h4>
             <small className="text-muted">
-              {policies.length} total policy{policies.length !== 1 ? 'ies' : 'y'}
+              {policies.length} total polic{policies.length !== 1 ? 'ies' : 'y'} across {categoryStats.length} categor{categoryStats.length !== 1 ? 'ies' : 'y'}
             </small>
           </div>
           <button 
@@ -142,19 +169,19 @@ export default function PoliciesPage() {
             <input
               type="text"
               className="form-control ps-5"
-              placeholder="Search policies by title, description, category, or tags..."
+              placeholder="Search categories..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
 
-        {/* Policies by Category */}
-        {Object.keys(filteredGroupedPolicies).length === 0 ? (
+        {/* Category Cards */}
+        {filteredCategories.length === 0 ? (
           <div className="text-center py-5">
             <FileText size={48} className="text-muted mb-3" />
             <h5 className="text-muted">
-              {searchTerm ? 'No policies found matching your search' : 'No policies found'}
+              {searchTerm ? 'No categories found matching your search' : 'No policy categories found'}
             </h5>
             {!searchTerm && (
               <button 
@@ -167,75 +194,52 @@ export default function PoliciesPage() {
             )}
           </div>
         ) : (
-          Object.keys(filteredGroupedPolicies).map((category) => (
-            <div key={category} className="mb-5">
-              <div className="d-flex align-items-center mb-3">
-                <h5 className="mb-0 me-3">{category}</h5>
-                <span className="badge bg-secondary">
-                  {filteredGroupedPolicies[category].length} policy{filteredGroupedPolicies[category].length !== 1 ? 'ies' : 'y'}
-                </span>
-              </div>
-              
-              <div className="row">
-                {filteredGroupedPolicies[category].map((policy) => (
-                  <div key={policy._id} className="col-md-6 col-lg-4 mb-3">
-                    <div className="card h-100 border-0 shadow-sm">
-                      <div className="card-body">
-                        <div className="d-flex justify-content-between align-items-start mb-2">
-                          <h6 className="card-title mb-0">{policy.title}</h6>
-                          <div className="dropdown">
-                            <button 
-                              className="btn btn-link btn-sm p-0" 
-                              data-bs-toggle="dropdown"
-                              aria-expanded="false"
-                            >
-                              <span className="text-muted">•••</span>
-                            </button>
-                            <ul className="dropdown-menu">
-                              <li><a className="dropdown-item" href="#"><Eye size={14} className="me-2" />View</a></li>
-                              <li><a className="dropdown-item" href="#"><Edit size={14} className="me-2" />Edit</a></li>
-                            </ul>
-                          </div>
+          <div className="row">
+            {filteredCategories.map((category) => {
+              const Icon = category.icon;
+              return (
+                <div key={category.name} className="col-md-6 col-lg-4 col-xl-3 mb-4">
+                  <div 
+                    className="card h-100 border-0 shadow-sm cursor-pointer"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => handleCategoryClick(category.name)}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                    }}
+                  >
+                    <div className="card-body text-center p-4">
+                      <div className="mb-3">
+                        <div 
+                          className="rounded-circle d-flex align-items-center justify-content-center mx-auto"
+                          style={{
+                            width: "64px",
+                            height: "64px",
+                            backgroundColor: "#f8f9fa",
+                            color: "#ca1f27"
+                          }}
+                        >
+                          <Icon size={32} />
                         </div>
-                        
-                        <p className="card-text text-muted small mb-3">
-                          {policy.description}
-                        </p>
-                        
-                        <div className="mb-3">
-                          {policy.tags && policy.tags.length > 0 && (
-                            <div className="mb-2">
-                              {policy.tags.slice(0, 3).map((tag, index) => (
-                                <span key={index} className="badge bg-light text-dark me-1 small">
-                                  {tag}
-                                </span>
-                              ))}
-                              {policy.tags.length > 3 && (
-                                <span className="badge bg-light text-dark small">
-                                  +{policy.tags.length - 3} more
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="d-flex justify-content-between align-items-center">
-                          <div className="d-flex align-items-center text-muted small">
-                            <Calendar size={12} className="me-1" />
-                            {formatDate(policy.created_at)}
-                          </div>
-                          <div className="d-flex align-items-center text-muted small">
-                            <User size={12} className="me-1" />
-                            {policy.created_by?.first_name} {policy.created_by?.last_name}
-                          </div>
-                        </div>
+                      </div>
+                      
+                      <h5 className="card-title mb-2">{category.name}</h5>
+                      
+                      <div className="d-flex align-items-center justify-content-center">
+                        <span className="badge bg-primary fs-6">
+                          {category.count} polic{category.count !== 1 ? 'ies' : 'y'}
+                        </span>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          ))
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>
