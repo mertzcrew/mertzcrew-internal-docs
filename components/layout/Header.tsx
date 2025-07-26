@@ -29,6 +29,7 @@ function Header({ activeNav, setActiveNav }: { activeNav: string, setActiveNav: 
 				onClick={() => {
 					setActiveNav(item.id);
 					if (item.id === "dashboard") router.push("/dashboard");
+					if (item.id === "policies") router.push("/policies");
 				}}
 				style={{
 					backgroundColor: activeNav === item.id ? "#f8f9fa" : "transparent",
