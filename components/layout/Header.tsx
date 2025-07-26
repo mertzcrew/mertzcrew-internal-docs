@@ -1,7 +1,10 @@
+"use client";
 import { Home, FileText, BookOpen, Users, Building2, Star, Clock, Tag, Share2 } from 'lucide-react'
 import React from 'react'
+import { useRouter } from 'next/navigation';
 
 function Header({ activeNav, setActiveNav }: { activeNav: string, setActiveNav: (id: string) => void }) {
+	const router = useRouter();
 	const sidebarItems = [
 		{ id: "dashboard", label: "Dashboard", icon: Home },
 		{ id: "documents", label: "All Documents", icon: FileText },
@@ -23,7 +26,11 @@ function Header({ activeNav, setActiveNav }: { activeNav: string, setActiveNav: 
 				className={`btn w-100 text-start d-flex align-items-center mb-1 ${
 					activeNav === item.id ? "btn-light" : "btn-link text-decoration-none text-dark"
 				}`}
-				onClick={() => setActiveNav(item.id)}
+				onClick={() => {
+					setActiveNav(item.id);
+					if (item.id === "dashboard") router.push("/dashboard");
+					if (item.id === "policies") router.push("/policies");
+				}}
 				style={{
 					backgroundColor: activeNav === item.id ? "#f8f9fa" : "transparent",
 					border: "none",
