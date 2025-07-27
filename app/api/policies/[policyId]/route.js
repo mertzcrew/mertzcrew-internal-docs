@@ -9,7 +9,7 @@ export async function GET(request, { params }) {
   try {
     await dbConnect();
     
-    const { policyId } = params;
+    const { policyId } = await params;
     
     const policy = await Policy.findById(policyId)
       .populate('created_by', 'first_name last_name email')
@@ -50,7 +50,7 @@ export async function PATCH(request, { params }) {
       );
     }
 
-    const { policyId } = params;
+    const { policyId } = await params;
     const body = await request.json();
     const { 
       title, 
@@ -58,19 +58,10 @@ export async function PATCH(request, { params }) {
       description, 
       category, 
       tags, 
-      organization 
+      organization,
+      status,
+      action
     } = body;
-
-    // Validate required fields
-    if (!title || !content || !category || !organization) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          message: 'Missing required fields: title, content, category, and organization are required' 
-        },
-        { status: 400 }
-      );
-    }
 
     // Find the user by email
     const user = await User.findOne({ email: session.user.email });
@@ -90,6 +81,40 @@ export async function PATCH(request, { params }) {
       );
     }
 
+    // Handle publish action
+    if (action === 'publish') {
+      const updatedPolicy = await Policy.findByIdAndUpdate(
+        policyId,
+        { 
+          status: 'active',
+          updated_by: user._id
+        },
+        { new: true, runValidators: true }
+      ).populate('created_by', 'first_name last_name email')
+       .populate('updated_by', 'first_name last_name email');
+
+      return NextResponse.json(
+        { 
+          success: true, 
+          message: 'Policy published successfully',
+          data: updatedPolicy
+        },
+        { status: 200 }
+      );
+    }
+
+    // Handle regular update
+    // Validate required fields
+    if (!title || !content || !category || !organization) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'Missing required fields: title, content, category, and organization are required' 
+        },
+        { status: 400 }
+      );
+    }
+
     // Parse tags if provided
     const parsedTags = tags ? tags.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
 
@@ -103,6 +128,11 @@ export async function PATCH(request, { params }) {
       organization,
       updated_by: user._id
     };
+
+    // Include status if provided
+    if (status) {
+      updateData.status = status;
+    }
 
     const updatedPolicy = await Policy.findByIdAndUpdate(
       policyId,

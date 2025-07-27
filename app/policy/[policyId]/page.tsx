@@ -3,7 +3,10 @@
 import React, { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Edit, ArrowLeft, Tag, BookOpen, Users, Building2, Star, Globe } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import dynamic from "next/dynamic";
+import "@uiw/react-markdown-preview/markdown.css";
+
+const MarkdownPreview = dynamic(() => import("@uiw/react-markdown-preview"), { ssr: false });
 
 interface Policy {
   _id: string;
@@ -106,13 +109,15 @@ export default function PolicyDetailPage() {
                 <strong>Description:</strong>
                 <div className="text-muted mt-1">{policy.description}</div>
               </div>
-              <div className="mb-3">
-                <strong>Content:</strong>
-                <div className="mt-2 border rounded p-3 bg-light" data-color-mode="light">
+              <div className="mb-4">
+                <h4 className="mb-3">Content</h4>
+                <div data-color-mode="light">
                   {policy.content ? (
-                    <ReactMarkdown>{policy.content}</ReactMarkdown>
+                    <MarkdownPreview source={policy.content} />
                   ) : (
-                    <span className="text-muted">No content</span>
+                    <div className="text-muted p-3 border rounded bg-light">
+                      No content available
+                    </div>
                   )}
                 </div>
               </div>

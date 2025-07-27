@@ -25,7 +25,16 @@ const PolicySchema = new mongoose.Schema({
   category: {
     type: String,
     required: [true, 'Policy category is required'],
-    trim: true
+    trim: true,
+    enum: [
+      "HR",
+      "Culture",
+      "Documentation",
+	  "Process",
+      "Safety",
+      "Quality",
+      "Other"
+    ]
   },
   version: {
     type: Number,
