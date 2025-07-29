@@ -9,14 +9,14 @@ export async function POST(request) {
 
     // Parse request body
     const body = await request.json();
-    const { email, password, first_name, last_name, role, department, position, phone } = body;
+    const { email, password, first_name, last_name, role, department, position, phone, permissions, organization } = body;
 
     // Validate required fields
-    if (!email || !password || !first_name || !last_name) {
+    if (!email || !password || !first_name || !last_name || !organization) {
       return NextResponse.json(
         { 
           success: false, 
-          message: 'Missing required fields: email, password, first_name, and last_name are required' 
+          message: 'Missing required fields: email, password, first_name, last_name, and organization are required' 
         },
         { status: 400 }
       );
@@ -40,10 +40,12 @@ export async function POST(request) {
       password,
       first_name,
       last_name,
-      role: role || 'employee',
+      role: role || 'associate',
       department: department || null,
       position: position || null,
-      phone: phone || null
+      phone: phone || null,
+      permissions: permissions || [],
+      organization
     };
 
     const user = new User(userData);
@@ -57,6 +59,8 @@ export async function POST(request) {
       last_name: user.last_name,
       fullName: user.fullName,
       role: user.role,
+      permissions: user.permissions,
+      organization: user.organization,
       department: user.department,
       position: user.position,
       phone: user.phone,
