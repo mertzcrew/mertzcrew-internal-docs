@@ -9,7 +9,10 @@ const PolicySchema = new mongoose.Schema({
   },
   content: {
     type: String,
-    required: [true, 'Policy content is required'],
+    required: function() {
+      // Content is required only if there are no attachments
+      return !this.attachments || this.attachments.length === 0;
+    },
     trim: true
   },
   description: {
@@ -121,11 +124,39 @@ const PolicySchema = new mongoose.Schema({
     ]
   },
   attachments: [{
-    filename: String,
-    url: String,
-    uploaded_at: {
+    fileName: {
+      type: String,
+      required: true
+    },
+    filePath: {
+      type: String,
+      required: true
+    },
+    fileUrl: {
+      type: String,
+      required: true
+    },
+    fileSize: {
+      type: Number,
+      required: true
+    },
+    fileType: {
+      type: String,
+      required: true
+    },
+    uploadedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    uploadedAt: {
       type: Date,
       default: Date.now
+    },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: [500, 'Description cannot be more than 500 characters']
     }
   }]
 }, {

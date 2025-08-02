@@ -5,8 +5,20 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import "@uiw/react-md-editor/markdown-editor.css";
 import "@uiw/react-markdown-preview/markdown.css";
+import PolicyFileUpload from "../../ui/PolicyFileUpload";
 
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
+
+interface PolicyAttachment {
+  fileName: string;
+  filePath: string;
+  fileUrl: string;
+  fileSize: number;
+  fileType: string;
+  uploadedBy?: string;
+  uploadedAt: Date | string;
+  description?: string;
+}
 
 interface PolicyFormProps {
   form: {
@@ -19,6 +31,8 @@ interface PolicyFormProps {
     content?: string;
     status?: string;
   };
+  attachments: PolicyAttachment[];
+  onAttachmentsChange: (attachments: PolicyAttachment[]) => void;
   errors: { [k: string]: string };
   isSubmitting: boolean;
   submitMessage: { type: 'success' | 'error', text: string } | null;
@@ -36,6 +50,8 @@ interface PolicyFormProps {
 
 function PolicyForm({
   form, 
+  attachments,
+  onAttachmentsChange,
   errors, 
   isSubmitting, 
   submitMessage, 
@@ -54,6 +70,10 @@ function PolicyForm({
   const isEditMode = mode === 'edit';
   const isActiveStatus = originalStatus === 'active';
   const canPublish = !isActiveStatus || (isActiveStatus && hasChanges);
+  
+  console.log('=== PolicyForm RENDER ===')
+  console.log('Form props:', { attachments: attachments.length, isSubmitting, mode })
+  console.log('About to render PolicyFileUpload component')
   
   return (
     <div className="container py-5">
@@ -117,7 +137,6 @@ function PolicyForm({
                     className={`form-control${errors.description ? " is-invalid" : ""}`}
                     value={form.description}
                     onChange={handleChange}
-                    required
                   />
                   {errors.description && <div className="invalid-feedback">{errors.description}</div>}
                 </div>
@@ -130,6 +149,15 @@ function PolicyForm({
                     value={form.tags}
                     onChange={handleChange}
                     placeholder="e.g., hr, safety, onboarding"
+                  />
+                </div>
+
+                {/* File Upload Section */}
+                <div className="mb-4">
+                  <PolicyFileUpload
+                    attachments={attachments}
+                    onAttachmentsChange={onAttachmentsChange}
+                    disabled={isSubmitting || isPublishing}
                   />
                 </div>
                 
@@ -148,7 +176,9 @@ function PolicyForm({
                 )}
 
                 <div className="mb-3">
-                  <label className="form-label fw-semibold">Body Content *</label>
+                  <label className="form-label fw-semibold">
+                    Body Content {attachments.length === 0 ? '*' : '(Optional - you can provide content or upload files)'}
+                  </label>
                   <div data-color-mode="light">
                     <MDEditor
                       value={form.body || form.content}

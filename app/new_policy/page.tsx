@@ -1,8 +1,19 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import PolicyForm from "@/components/forms/policies/PolicyForm";
+
+interface PolicyAttachment {
+  fileName: string;
+  filePath: string;
+  fileUrl: string;
+  fileSize: number;
+  fileType: string;
+  uploadedBy?: string;
+  uploadedAt: Date | string;
+  description?: string;
+}
 
 interface PolicyFormValues {
   title: string;
@@ -26,10 +37,19 @@ const initialForm: PolicyFormValues = {
 
 export default function NewPolicyPage() {
   const [form, setForm] = useState<PolicyFormValues>(initialForm);
+  const [attachments, setAttachments] = useState<PolicyAttachment[]>([]);
   const [errors, setErrors] = useState<{ [k: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const router = useRouter();
+
+  // Debug attachments changes
+  const handleAttachmentsChange = (newAttachments: PolicyAttachment[]) => {
+    console.log('New policy page - attachments changed:', newAttachments);
+    setAttachments(newAttachments);
+  };
+
+
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     if (e.target.name === "status" && e.target instanceof HTMLInputElement) {
@@ -56,12 +76,28 @@ export default function NewPolicyPage() {
     if (!values.category.trim()) errs.category = "Category is required";
     if (!values.organization.trim()) errs.organization = "Organization is required";
     if (!values.description.trim()) errs.description = "Description is required";
-    if (!values.body.trim()) errs.body = "Body content is required";
+    
+    // Body content is only required if there are no attachments
+    const hasAttachments = attachments.length > 0;
+    console.log('Validation - body content:', values.body.trim());
+    console.log('Validation - attachments count:', attachments.length);
+    console.log('Validation - hasAttachments:', hasAttachments);
+    
+    if (!values.body.trim() && !hasAttachments) {
+      errs.body = "Either body content or attachments are required";
+      console.log('Validation - Adding body error');
+    }
+    
+    console.log('Validation - errors:', errs);
     return errs;
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    console.log('Submit - form:', form);
+    console.log('Submit - attachments:', attachments);
+    console.log('Submit - attachments length:', attachments.length);
+    
     const errs = validate(form);
     setErrors(errs);
     
@@ -82,7 +118,8 @@ export default function NewPolicyPage() {
             category: form.category,
             organization: form.organization,
             tags: form.tags,
-            status: form.status
+            status: form.status,
+            attachments: attachments
           }),
         });
 
@@ -119,6 +156,8 @@ export default function NewPolicyPage() {
   return (
     <PolicyForm
       form={form}
+      attachments={attachments}
+      onAttachmentsChange={handleAttachmentsChange}
       errors={errors}
       isSubmitting={isSubmitting}
       submitMessage={submitMessage}

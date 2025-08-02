@@ -52,6 +52,8 @@ export async function PATCH(request, { params }) {
 
     const { policyId } = await params;
     const body = await request.json();
+    console.log('Edit API - Received request body:', body);
+    
     const { 
       title, 
       content, 
@@ -60,8 +62,11 @@ export async function PATCH(request, { params }) {
       tags, 
       organization,
       status,
+      attachments = [],
       action
     } = body;
+    
+    console.log('Edit API - Extracted attachments:', attachments);
 
     // Find the user by email
     const user = await User.findOne({ email: session.user.email });
@@ -105,11 +110,22 @@ export async function PATCH(request, { params }) {
 
     // Handle regular update
     // Validate required fields
-    if (!title || !content || !category || !organization) {
+    if (!title || !category || !organization) {
       return NextResponse.json(
         { 
           success: false, 
-          message: 'Missing required fields: title, content, category, and organization are required' 
+          message: 'Missing required fields: title, category, and organization are required' 
+        },
+        { status: 400 }
+      );
+    }
+
+    // Content is required only if there are no attachments
+    if (!content && (!attachments || attachments.length === 0)) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'Either content or attachments are required' 
         },
         { status: 400 }
       );
@@ -118,14 +134,22 @@ export async function PATCH(request, { params }) {
     // Parse tags if provided
     const parsedTags = tags ? tags.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
 
+    // Process attachments to add uploadedBy field and ensure proper date format
+    const processedAttachments = attachments.map(attachment => ({
+      ...attachment,
+      uploadedBy: user._id,
+      uploadedAt: new Date(attachment.uploadedAt || Date.now())
+    }));
+
     // Update the policy
     const updateData = {
       title: title.trim(),
-      content: content.trim(),
+      content: content ? content.trim() : '',
       description: description ? description.trim() : '',
       category: category.trim(),
       tags: parsedTags,
       organization,
+      attachments: processedAttachments,
       updated_by: user._id
     };
 
@@ -134,12 +158,18 @@ export async function PATCH(request, { params }) {
       updateData.status = status;
     }
 
+    console.log('Edit API - Update data:', updateData);
+    console.log('Edit API - Processed attachments:', processedAttachments);
+
     const updatedPolicy = await Policy.findByIdAndUpdate(
       policyId,
       updateData,
       { new: true, runValidators: true }
     ).populate('created_by', 'first_name last_name email')
      .populate('updated_by', 'first_name last_name email');
+     
+    console.log('Edit API - Updated policy:', updatedPolicy);
+    console.log('Edit API - Updated policy attachments:', updatedPolicy.attachments);
 
     return NextResponse.json(
       { 

@@ -8,13 +8,13 @@ function Header({ activeNav, setActiveNav, isAdmin }: { activeNav: string, setAc
 	let sidebarItems = [
 		{ id: "dashboard", label: "Dashboard", icon: Home },
 		{ id: "documents", label: "All Documents", icon: FileText },
-		{ id: "policies", label: "Policies", icon: BookOpen },
+		{ id: "policies", label: "All Policies", icon: BookOpen },
 		{ id: "training", label: "Training", icon: Users },
 		{ id: "hr", label: "HR Resources", icon: Building2 },
 		{ id: "culture", label: "Culture Guide", icon: Star },
-		{ id: "recent", label: "Recent", icon: Clock },
-		{ id: "tags", label: "Tags", icon: Tag },
-		{ id: "shared", label: "Shared", icon: Share2 },
+		// { id: "recent", label: "Recent", icon: Clock },
+		// { id: "tags", label: "Tags", icon: Tag },
+		// { id: "shared", label: "Shared", icon: Share2 },
 	]
 	if (isAdmin) {
 		sidebarItems = [
@@ -36,6 +36,9 @@ function Header({ activeNav, setActiveNav, isAdmin }: { activeNav: string, setAc
 					if (item.id === "dashboard") router.push("/dashboard");
 					if (item.id === "policies") router.push("/policies");
 					if (item.id === "adduser") router.push("/add-user");
+					if (item.id === "hr") router.push("/policies/HR");
+					if (item.id === "culture") router.push("/policies/Culture");
+					if (item.id === "training") router.push("/policies/Training");
 				}}
 				style={{
 					backgroundColor: activeNav === item.id ? "#f8f9fa" : "transparent",

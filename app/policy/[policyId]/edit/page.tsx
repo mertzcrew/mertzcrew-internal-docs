@@ -4,6 +4,17 @@ import React, { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import PolicyForm from "@/components/forms/policies/PolicyForm";
 
+interface PolicyAttachment {
+  fileName: string;
+  filePath: string;
+  fileUrl: string;
+  fileSize: number;
+  fileType: string;
+  uploadedBy?: string;
+  uploadedAt: Date | string;
+  description?: string;
+}
+
 interface Policy {
   _id: string;
   title: string;
@@ -13,6 +24,7 @@ interface Policy {
   organization: string;
   tags: string[];
   status: string;
+  attachments?: PolicyAttachment[];
 }
 
 interface PolicyFormValues {
@@ -38,6 +50,7 @@ const initialForm: PolicyFormValues = {
 export default function EditPolicyPage() {
   const [form, setForm] = useState<PolicyFormValues>(initialForm);
   const [originalForm, setOriginalForm] = useState<PolicyFormValues>(initialForm);
+  const [attachments, setAttachments] = useState<PolicyAttachment[]>([]);
   const [errors, setErrors] = useState<{ [k: string]: string }>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,6 +84,7 @@ export default function EditPolicyPage() {
         };
         setForm(formData);
         setOriginalForm(formData);
+        setAttachments(policy.attachments || []);
       } else {
         setError(result.message || "Policy not found");
       }
@@ -103,7 +117,10 @@ export default function EditPolicyPage() {
     if (!values.category.trim()) errs.category = "Category is required";
     if (!values.organization.trim()) errs.organization = "Organization is required";
     if (!values.description.trim()) errs.description = "Description is required";
-    if (!values.content.trim()) errs.content = "Body content is required";
+    
+    // Body content is only required if there are no attachments
+    const hasAttachments = attachments.length > 0;
+    if (!values.content.trim() && !hasAttachments) errs.content = "Either body content or attachments are required";
     return errs;
   }
 
@@ -133,7 +150,8 @@ export default function EditPolicyPage() {
             category: form.category,
             organization: form.organization,
             tags: form.tags,
-            status: form.status
+            status: form.status,
+            attachments: attachments
           }),
         });
 
@@ -191,7 +209,8 @@ export default function EditPolicyPage() {
           category: form.category,
           organization: form.organization,
           tags: form.tags,
-          status: 'active' // Set status to active to publish
+          status: 'active', // Set status to active to publish
+          attachments: attachments
         }),
       });
 
@@ -250,6 +269,8 @@ export default function EditPolicyPage() {
   return (
     <PolicyForm
       form={form}
+      attachments={attachments}
+      onAttachmentsChange={setAttachments}
       errors={errors}
       isSubmitting={isSubmitting}
       submitMessage={submitMessage}
