@@ -1,21 +1,26 @@
 "use client";
-import { Home, FileText, BookOpen, Users, Building2, Star, Clock, Tag, Share2 } from 'lucide-react'
+import { Home, FileText, BookOpen, Users, Building2, Star, Clock, Tag, Share2, UserPlus } from 'lucide-react'
 import React from 'react'
 import { useRouter } from 'next/navigation';
 
-function Header({ activeNav, setActiveNav }: { activeNav: string, setActiveNav: (id: string) => void }) {
+function Header({ activeNav, setActiveNav, isAdmin }: { activeNav: string, setActiveNav: (id: string) => void, isAdmin?: boolean }) {
 	const router = useRouter();
-	const sidebarItems = [
+	let sidebarItems = [
 		{ id: "dashboard", label: "Dashboard", icon: Home },
 		{ id: "documents", label: "All Documents", icon: FileText },
-		{ id: "policies", label: "Policies", icon: BookOpen },
+		{ id: "policies", label: "All Policies", icon: BookOpen },
 		{ id: "training", label: "Training", icon: Users },
 		{ id: "hr", label: "HR Resources", icon: Building2 },
 		{ id: "culture", label: "Culture Guide", icon: Star },
-		{ id: "recent", label: "Recent", icon: Clock },
-		{ id: "tags", label: "Tags", icon: Tag },
-		{ id: "shared", label: "Shared", icon: Share2 },
+		// { id: "recent", label: "Recent", icon: Clock },
+		// { id: "tags", label: "Tags", icon: Tag },
+		// { id: "shared", label: "Shared", icon: Share2 },
 	]
+	if (isAdmin) {
+		sidebarItems = [
+			{ id: "adduser", label: "Add User", icon: UserPlus },
+		]
+	}
 	return (
 		<nav className="p-3">
 			{sidebarItems.map((item) => {
@@ -30,6 +35,10 @@ function Header({ activeNav, setActiveNav }: { activeNav: string, setActiveNav: 
 					setActiveNav(item.id);
 					if (item.id === "dashboard") router.push("/dashboard");
 					if (item.id === "policies") router.push("/policies");
+					if (item.id === "adduser") router.push("/add-user");
+					if (item.id === "hr") router.push("/policies/HR");
+					if (item.id === "culture") router.push("/policies/Culture");
+					if (item.id === "training") router.push("/policies/Training");
 				}}
 				style={{
 					backgroundColor: activeNav === item.id ? "#f8f9fa" : "transparent",

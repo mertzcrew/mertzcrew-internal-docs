@@ -55,6 +55,10 @@ function Sidebar() {
             </button>
           </div>
         </div>
+
+        {session?.user?.role === 'admin' && (
+          <Header activeNav={activeNav} setActiveNav={setActiveNav} isAdmin={true} />
+        )}
       </div>
     </div>
   );

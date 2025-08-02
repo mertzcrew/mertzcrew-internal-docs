@@ -47,11 +47,39 @@ const DocumentSchema = new mongoose.Schema({
     default: 0
   },
   attachments: [{
-    filename: String,
-    url: String,
-    uploaded_at: {
+    fileName: {
+      type: String,
+      required: true
+    },
+    filePath: {
+      type: String,
+      required: true
+    },
+    fileUrl: {
+      type: String,
+      required: true
+    },
+    fileSize: {
+      type: Number,
+      required: true
+    },
+    fileType: {
+      type: String,
+      required: true
+    },
+    uploadedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    uploadedAt: {
       type: Date,
       default: Date.now
+    },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: [500, 'Description cannot be more than 500 characters']
     }
   }],
   version: {

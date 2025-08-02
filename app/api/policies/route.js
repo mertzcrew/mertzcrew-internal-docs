@@ -20,21 +20,37 @@ export async function POST(request) {
 
     // Parse request body
     const body = await request.json();
+    console.log('API - Received request body:', body);
+    
     const { 
       title, 
       content, 
       description, 
       category, 
       tags, 
-      organization = 'all' 
+      organization = 'all',
+      attachments = []
     } = body;
+    
+    console.log('API - Extracted attachments:', attachments);
 
     // Validate required fields
-    if (!title || !content || !category || !organization) {
+    if (!title || !category || !organization) {
       return NextResponse.json(
         { 
           success: false, 
-          message: 'Missing required fields: title, content, category, and organization are required' 
+          message: 'Missing required fields: title, category, and organization are required' 
+        },
+        { status: 400 }
+      );
+    }
+
+    // Content is required only if there are no attachments
+    if (!content && (!attachments || attachments.length === 0)) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'Either content or attachments are required' 
         },
         { status: 400 }
       );
@@ -52,20 +68,42 @@ export async function POST(request) {
     // Parse tags if provided
     const parsedTags = tags ? tags.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
 
+    // Process attachments to add uploadedBy field and ensure proper date format
+    const processedAttachments = attachments.map(attachment => ({
+      ...attachment,
+      uploadedBy: user._id,
+      uploadedAt: new Date(attachment.uploadedAt || Date.now())
+    }));
+
     // Create new policy
     const policyData = {
       title: title.trim(),
-      content: content.trim(),
+      content: content ? content.trim() : '',
       description: description ? description.trim() : '',
       category: category.trim(),
       tags: parsedTags,
       organization,
+      attachments: processedAttachments,
       created_by: user._id,
       updated_by: user._id
     };
 
+    console.log('API - Policy data to save:', policyData);
+    console.log('API - Attachments in policy data:', policyData.attachments);
+
     const policy = new Policy(policyData);
-    await policy.save();
+    
+    try {
+      await policy.save();
+      console.log('API - Saved policy:', policy);
+      console.log('API - Saved policy attachments:', policy.attachments);
+    } catch (saveError) {
+      console.error('API - Error saving policy:', saveError);
+      if (saveError.name === 'ValidationError') {
+        console.error('API - Validation errors:', saveError.errors);
+      }
+      throw saveError;
+    }
 
     // Return success response
     return NextResponse.json(

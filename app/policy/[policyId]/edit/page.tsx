@@ -2,10 +2,18 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import dynamic from "next/dynamic";
-import { ArrowLeft } from "lucide-react";
+import PolicyForm from "@/components/forms/policies/PolicyForm";
 
-const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
+interface PolicyAttachment {
+  fileName: string;
+  filePath: string;
+  fileUrl: string;
+  fileSize: number;
+  fileType: string;
+  uploadedBy?: string;
+  uploadedAt: Date | string;
+  description?: string;
+}
 
 interface Policy {
   _id: string;
@@ -15,22 +23,39 @@ interface Policy {
   category: string;
   organization: string;
   tags: string[];
+  status: string;
+  attachments?: PolicyAttachment[];
 }
 
-const initialForm = {
+interface PolicyFormValues {
+  title: string;
+  category: string;
+  organization: string;
+  description: string;
+  tags: string;
+  content: string;
+  status: string;
+}
+
+const initialForm: PolicyFormValues = {
   title: "",
-  content: "",
-  description: "",
   category: "",
   organization: "all",
+  description: "",
   tags: "",
+  content: "",
+  status: "draft",
 };
 
 export default function EditPolicyPage() {
-  const [form, setForm] = useState({ ...initialForm });
+  const [form, setForm] = useState<PolicyFormValues>(initialForm);
+  const [originalForm, setOriginalForm] = useState<PolicyFormValues>(initialForm);
+  const [attachments, setAttachments] = useState<PolicyAttachment[]>([]);
+  const [errors, setErrors] = useState<{ [k: string]: string }>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const router = useRouter();
   const params = useParams();
@@ -48,18 +73,22 @@ export default function EditPolicyPage() {
       const result = await response.json();
       if (response.ok) {
         const policy: Policy = result.data;
-        setForm({
+        const formData = {
           title: policy.title,
           content: policy.content,
           description: policy.description,
           category: policy.category,
           organization: policy.organization,
           tags: policy.tags ? policy.tags.join(", ") : "",
-        });
+          status: policy.status,
+        };
+        setForm(formData);
+        setOriginalForm(formData);
+        setAttachments(policy.attachments || []);
       } else {
         setError(result.message || "Policy not found");
       }
-    } catch (err) {
+    } catch {
       setError("An error occurred while fetching the policy");
     } finally {
       setLoading(false);
@@ -68,34 +97,106 @@ export default function EditPolicyPage() {
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     setForm({ ...form, [e.target.name]: e.target.value });
-    if (error) setError(null);
+    // Clear error when user starts typing
+    if (errors[e.target.name]) {
+      setErrors({ ...errors, [e.target.name]: "" });
+    }
   }
 
   function handleBodyChange(value: string | undefined) {
     setForm({ ...form, content: value || "" });
-    if (error) setError(null);
+    // Clear error when user starts typing
+    if (errors.content) {
+      setErrors({ ...errors, content: "" });
+    }
   }
 
-  function validate(values: typeof initialForm) {
+  function validate(values: PolicyFormValues) {
     const errs: { [k: string]: string } = {};
     if (!values.title.trim()) errs.title = "Title is required";
     if (!values.category.trim()) errs.category = "Category is required";
     if (!values.organization.trim()) errs.organization = "Organization is required";
     if (!values.description.trim()) errs.description = "Description is required";
-    if (!values.content.trim()) errs.content = "Body content is required";
+    
+    // Body content is only required if there are no attachments
+    const hasAttachments = attachments.length > 0;
+    if (!values.content.trim() && !hasAttachments) errs.content = "Either body content or attachments are required";
     return errs;
+  }
+
+  function hasChanges(): boolean {
+    return JSON.stringify(form) !== JSON.stringify(originalForm);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const errs = validate(form);
-    if (Object.keys(errs).length > 0) {
-      setError(Object.values(errs).join(". "));
-      return;
+    setErrors(errs);
+    
+    if (Object.keys(errs).length === 0) {
+      setIsSubmitting(true);
+      setSubmitMessage(null);
+      
+      try {
+        const response = await fetch(`/api/policies/${policyId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            title: form.title,
+            content: form.content,
+            description: form.description,
+            category: form.category,
+            organization: form.organization,
+            tags: form.tags,
+            status: form.status,
+            attachments: attachments
+          }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          setSubmitMessage({ type: 'success', text: 'Policy updated successfully!' });
+          // Update original form to reflect changes
+          setOriginalForm({ ...form });
+          setTimeout(() => {
+            setSubmitMessage(null);
+            router.push(`/policy/${policyId}`);
+          }, 2000);
+        } else {
+          setSubmitMessage({ 
+            type: 'error', 
+            text: result.message || 'Failed to update policy' 
+          });
+        }
+      } catch (error) {
+        console.error('Error updating policy:', error);
+        setSubmitMessage({ 
+          type: 'error', 
+          text: 'An error occurred while updating the policy' 
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
     }
-    setIsSubmitting(true);
+  }
+
+  async function handlePublishPolicy() {
+    // First validate the form
+    const errs = validate(form);
+    setErrors(errs);
+    
+    if (Object.keys(errs).length > 0) {
+      return; // Don't proceed if there are validation errors
+    }
+
+    setIsPublishing(true);
     setSubmitMessage(null);
+    
     try {
+      // First save all form changes with status as 'active'
       const response = await fetch(`/api/policies/${policyId}`, {
         method: 'PATCH',
         headers: {
@@ -108,21 +209,37 @@ export default function EditPolicyPage() {
           category: form.category,
           organization: form.organization,
           tags: form.tags,
+          status: 'active', // Set status to active to publish
+          attachments: attachments
         }),
       });
+
       const result = await response.json();
+
       if (response.ok) {
-        setSubmitMessage({ type: 'success', text: 'Policy updated successfully!' });
+        setSubmitMessage({ type: 'success', text: 'Policy published successfully!' });
+        // Update form and original form to reflect the status change
+        const updatedForm = { ...form, status: 'active' };
+        setForm(updatedForm);
+        setOriginalForm(updatedForm);
         setTimeout(() => {
+          setSubmitMessage(null);
           router.push(`/policy/${policyId}`);
-        }, 1500);
+        }, 2000);
       } else {
-        setSubmitMessage({ type: 'error', text: result.message || 'Failed to update policy' });
+        setSubmitMessage({ 
+          type: 'error', 
+          text: result.message || 'Failed to publish policy' 
+        });
       }
-    } catch (err) {
-      setSubmitMessage({ type: 'error', text: 'An error occurred while updating the policy' });
+    } catch (error) {
+      console.error('Error publishing policy:', error);
+      setSubmitMessage({ 
+        type: 'error', 
+        text: 'An error occurred while publishing the policy' 
+      });
     } finally {
-      setIsSubmitting(false);
+      setIsPublishing(false);
     }
   }
 
@@ -143,118 +260,30 @@ export default function EditPolicyPage() {
           {error}
         </div>
         <button className="btn btn-link" onClick={() => router.back()}>
-          <ArrowLeft size={16} className="me-1" /> Back
+          ← Back
         </button>
       </div>
     );
   }
 
   return (
-    <div className="container py-5">
-      <div className="row justify-content-center">
-        <div className="col-md-8 col-lg-7">
-          <div className="card shadow border-0">
-            <div className="card-body p-4">
-              <h2 className="mb-4">Edit Policy</h2>
-              {submitMessage && (
-                <div className={`alert alert-${submitMessage.type === 'success' ? 'success' : 'danger'}`}>
-                  {submitMessage.text}
-                </div>
-              )}
-              <form onSubmit={handleSubmit}>
-                <div className="mb-3">
-                  <label className="form-label fw-semibold">Title *</label>
-                  <input
-                    name="title"
-                    className="form-control"
-                    value={form.title}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="mb-3">
-                  <label className="form-label fw-semibold">Category *</label>
-                  <input
-                    name="category"
-                    className="form-control"
-                    value={form.category}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="mb-3">
-                  <label className="form-label fw-semibold">Organization *</label>
-                  <select
-                    name="organization"
-                    className="form-select"
-                    value={form.organization}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="all">All Organizations</option>
-                    <option value="mertzcrew">Mertzcrew</option>
-                    <option value="mertz_production">Mertz Production</option>
-                  </select>
-                </div>
-                <div className="mb-3">
-                  <label className="form-label fw-semibold">Description *</label>
-                  <input
-                    name="description"
-                    className="form-control"
-                    value={form.description}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="mb-3">
-                  <label className="form-label fw-semibold">Tags (comma separated)</label>
-                  <input
-                    name="tags"
-                    className="form-control"
-                    value={form.tags}
-                    onChange={handleChange}
-                    placeholder="e.g., hr, safety, onboarding"
-                  />
-                </div>
-                <div className="mb-3">
-                  <label className="form-label fw-semibold">Body Content *</label>
-                  <div data-color-mode="light">
-                    <MDEditor
-                      value={form.content}
-                      onChange={handleBodyChange}
-                      height={300}
-                    />
-                  </div>
-                </div>
-                <div className="d-flex justify-content-end gap-2">
-                  <button 
-                    type="button" 
-                    className="btn btn-secondary"
-                    onClick={() => router.push(`/policy/${policyId}`)}
-                    disabled={isSubmitting}
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit" 
-                    className="btn btn-primary"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                        Saving...
-                      </>
-                    ) : (
-                      'Save Changes'
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <PolicyForm
+      form={form}
+      attachments={attachments}
+      onAttachmentsChange={setAttachments}
+      errors={errors}
+      isSubmitting={isSubmitting}
+      submitMessage={submitMessage}
+      handleSubmit={handleSubmit}
+      handleChange={handleChange}
+      handleBodyChange={handleBodyChange}
+      mode="edit"
+      policyId={policyId}
+      originalStatus={originalForm.status}
+      onPublishPolicy={handlePublishPolicy}
+      isPublishing={isPublishing}
+      hasChanges={hasChanges()}
+      onCancel={() => router.push(`/policy/${policyId}`)}
+    />
   );
 } 
