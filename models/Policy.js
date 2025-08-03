@@ -33,7 +33,7 @@ const PolicySchema = new mongoose.Schema({
       "HR",
       "Culture",
       "Documentation",
-	  "Process",
+	    "Process",
       "Safety",
       "Quality",
       "Other"

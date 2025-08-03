@@ -22,7 +22,8 @@ import {
   Settings,
   Globe,
   Home,
-  Award
+  Award,
+  Trash2
 } from "lucide-react";
 
 interface Policy {
@@ -46,6 +47,9 @@ export default function CategoryPoliciesPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deletePolicyId, setDeletePolicyId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const router = useRouter();
   const params = useParams();
   const categoryName = decodeURIComponent(params.category as string);
@@ -113,6 +117,41 @@ export default function CategoryPoliciesPage() {
     });
   };
 
+  const handleDelete = async () => {
+    if (!deletePolicyId) return;
+    
+    try {
+      setIsDeleting(true);
+      const response = await fetch(`/api/policies/${deletePolicyId}`, {
+        method: 'DELETE',
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        // Remove the deleted policy from the list
+        setPolicies(prevPolicies => prevPolicies.filter(policy => policy._id !== deletePolicyId));
+        setShowDeleteConfirm(false);
+        setDeletePolicyId(null);
+      } else {
+        setError(result.message || 'Failed to delete policy');
+        setShowDeleteConfirm(false);
+        setDeletePolicyId(null);
+      }
+    } catch (err) {
+      setError('An error occurred while deleting the policy');
+      setShowDeleteConfirm(false);
+      setDeletePolicyId(null);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const confirmDelete = (policyId: string) => {
+    setDeletePolicyId(policyId);
+    setShowDeleteConfirm(true);
+  };
+
   const CategoryIcon = getCategoryIcon(categoryName);
 
   if (loading) {
@@ -177,6 +216,72 @@ export default function CategoryPoliciesPage() {
           </button>
         </div>
       </div>
+
+      {/* Error Alert */}
+      {error && (
+        <div className="alert alert-danger alert-dismissible fade show m-3" role="alert">
+          {error}
+          <button
+            type="button"
+            className="btn-close"
+            onClick={() => setError(null)}
+          ></button>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Confirm Deletion</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setDeletePolicyId(null);
+                  }}
+                  disabled={isDeleting}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <p>Are you sure you want to delete this policy?</p>
+                <p className="text-danger mb-0">This action cannot be undone.</p>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setDeletePolicyId(null);
+                  }}
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      Deleting...
+                    </>
+                  ) : (
+                    'Delete Policy'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="p-4">
         {/* Search Bar */}
@@ -244,8 +349,46 @@ export default function CategoryPoliciesPage() {
                           <span className="text-muted">•••</span>
                         </button>
                         <ul className="dropdown-menu">
-                          <li><a className="dropdown-item" href="#"><Eye size={14} className="me-2" />View</a></li>
-                          <li><a className="dropdown-item" href="#"><Edit size={14} className="me-2" />Edit</a></li>
+                          <li>
+                            <a 
+                              className="dropdown-item" 
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                router.push(`/policy/${policy._id}`);
+                              }}
+                            >
+                              <Eye size={14} className="me-2" />View
+                            </a>
+                          </li>
+                          <li>
+                            <a 
+                              className="dropdown-item" 
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                router.push(`/policy/${policy._id}/edit`);
+                              }}
+                            >
+                              <Edit size={14} className="me-2" />Edit
+                            </a>
+                          </li>
+                          <li><hr className="dropdown-divider" /></li>
+                          <li>
+                            <a 
+                              className="dropdown-item text-danger" 
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                confirmDelete(policy._id);
+                              }}
+                            >
+                              <Trash2 size={14} className="me-2" />Delete
+                            </a>
+                          </li>
                         </ul>
                       </div>
                     </div>

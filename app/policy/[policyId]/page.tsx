@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { Edit, ArrowLeft, Tag, BookOpen, Users, Building2, Star, Globe, Download, ExternalLink, FileText } from "lucide-react";
+import { Edit, ArrowLeft, Tag, BookOpen, Users, Building2, Star, Globe, Download, ExternalLink, FileText, Trash2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import "@uiw/react-markdown-preview/markdown.css";
 
@@ -55,6 +55,8 @@ export default function PolicyDetailPage() {
   const [policy, setPolicy] = useState<Policy | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const router = useRouter();
   const params = useParams();
   const policyId = params.policyId as string;
@@ -80,6 +82,30 @@ export default function PolicyDetailPage() {
       setError("An error occurred while fetching the policy");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true);
+      const response = await fetch(`/api/policies/${policyId}`, {
+        method: 'DELETE',
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        // Redirect to policies page after successful deletion
+        router.push('/policies');
+      } else {
+        setError(result.message || 'Failed to delete policy');
+        setShowDeleteConfirm(false);
+      }
+    } catch (err) {
+      setError('An error occurred while deleting the policy');
+      setShowDeleteConfirm(false);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -117,13 +143,83 @@ export default function PolicyDetailPage() {
             <div className="card-body p-4">
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <h2 className="mb-0">{policy.title}</h2>
-                <button
-                  className="btn btn-outline-primary"
-                  onClick={() => router.push(`/policy/${policy._id}/edit`)}
-                >
-                  <Edit size={16} className="me-2" /> Edit
-                </button>
+                <div className="d-flex gap-2">
+                  <button
+                    className="btn btn-outline-primary"
+                    onClick={() => router.push(`/policy/${policy._id}/edit`)}
+                  >
+                    <Edit size={16} className="me-2" /> Edit
+                  </button>
+                  <button
+                    className="btn btn-outline-danger"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    disabled={isDeleting}
+                  >
+                    <Trash2 size={16} className="me-2" /> Delete
+                  </button>
+                </div>
               </div>
+
+              {/* Delete Confirmation Modal */}
+              {showDeleteConfirm && (
+                <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                  <div className="modal-dialog modal-dialog-centered">
+                    <div className="modal-content">
+                      <div className="modal-header">
+                        <h5 className="modal-title">Confirm Deletion</h5>
+                        <button
+                          type="button"
+                          className="btn-close"
+                          onClick={() => setShowDeleteConfirm(false)}
+                          disabled={isDeleting}
+                        ></button>
+                      </div>
+                      <div className="modal-body">
+                        <p>Are you sure you want to delete "<strong>{policy.title}</strong>"?</p>
+                        <p className="text-danger mb-0">This action cannot be undone.</p>
+                      </div>
+                      <div className="modal-footer">
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={() => setShowDeleteConfirm(false)}
+                          disabled={isDeleting}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-danger"
+                          onClick={handleDelete}
+                          disabled={isDeleting}
+                        >
+                          {isDeleting ? (
+                            <>
+                              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                              Deleting...
+                            </>
+                          ) : (
+                            'Delete Policy'
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Error Alert */}
+              {error && (
+                <div className="alert alert-danger alert-dismissible fade show" role="alert">
+                  {error}
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={() => setError(null)}
+                  ></button>
+                </div>
+              )}
+
               <div className="mb-3 text-muted">
                 <span className="me-3">
                   <BookOpen size={14} className="me-1" /> {policy.category}

@@ -1,5 +1,5 @@
 "use client";
-import { Home, FileText, BookOpen, Users, Building2, Star, Clock, Tag, Share2, UserPlus } from 'lucide-react'
+import { Home, FileText, BookOpen, Users, Building2, Star, Clock, Tag, Share2, UserPlus, BookOpenText } from 'lucide-react'
 import React from 'react'
 import { useRouter } from 'next/navigation';
 
@@ -12,7 +12,7 @@ function Header({ activeNav, setActiveNav, isAdmin }: { activeNav: string, setAc
 		{ id: "training", label: "Training", icon: Users },
 		{ id: "hr", label: "HR Resources", icon: Building2 },
 		{ id: "culture", label: "Culture Guide", icon: Star },
-		// { id: "recent", label: "Recent", icon: Clock },
+		{ id: "process", label: "Processes", icon: BookOpenText },
 		// { id: "tags", label: "Tags", icon: Tag },
 		// { id: "shared", label: "Shared", icon: Share2 },
 	]
@@ -39,6 +39,7 @@ function Header({ activeNav, setActiveNav, isAdmin }: { activeNav: string, setAc
 					if (item.id === "hr") router.push("/policies/HR");
 					if (item.id === "culture") router.push("/policies/Culture");
 					if (item.id === "training") router.push("/policies/Training");
+					if (item.id === "process") router.push("/policies/Process");
 				}}
 				style={{
 					backgroundColor: activeNav === item.id ? "#f8f9fa" : "transparent",

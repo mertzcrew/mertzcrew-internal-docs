@@ -205,3 +205,69 @@ export async function PATCH(request, { params }) {
     );
   }
 } 
+
+// DELETE a policy
+export async function DELETE(request, { params }) {
+  try {
+    await dbConnect();
+
+    // Get session to identify the user
+    const session = await getServerSession();
+    if (!session) {
+      return NextResponse.json(
+        { success: false, message: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    const { policyId } = await params;
+
+    // Find the user by email
+    const user = await User.findOne({ email: session.user.email });
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check if user has delete permission
+    const hasDeletePermission = user.permissions?.includes('delete_policy') || user.role === 'admin';
+    if (!hasDeletePermission) {
+      return NextResponse.json(
+        { success: false, message: 'Insufficient permissions to delete policy' },
+        { status: 403 }
+      );
+    }
+
+    // Find the policy
+    const policy = await Policy.findById(policyId);
+    if (!policy) {
+      return NextResponse.json(
+        { success: false, message: 'Policy not found' },
+        { status: 404 }
+      );
+    }
+
+    // Delete the policy
+    await Policy.findByIdAndDelete(policyId);
+
+    return NextResponse.json(
+      { 
+        success: true, 
+        message: 'Policy deleted successfully'
+      },
+      { status: 200 }
+    );
+
+  } catch (error) {
+    console.error('Error deleting policy:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: 'Internal server error' 
+      },
+      { status: 500 }
+    );
+  }
+} 
