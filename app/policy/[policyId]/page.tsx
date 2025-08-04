@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { Edit, ArrowLeft, Tag, BookOpen, Users, Building2, Star, Globe, Download, ExternalLink, FileText, Trash2 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { Edit, ArrowLeft, Tag, BookOpen, Users, Building2, Star, Globe, Download, ExternalLink, FileText, Trash2, AlertCircle, CheckCircle } from "lucide-react";
 import dynamic from "next/dynamic";
 import "@uiw/react-markdown-preview/markdown.css";
 
@@ -46,9 +47,29 @@ interface Policy {
   category: string;
   organization: string;
   tags: string[];
+  status: string;
+  pending_changes?: any;
+  assigned_users?: Array<{
+    _id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+  }>;
   attachments?: PolicyAttachment[];
   created_at: string;
   updated_at: string;
+  created_by: {
+    _id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
+  updated_by?: {
+    _id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
 }
 
 export default function PolicyDetailPage() {
@@ -57,6 +78,9 @@ export default function PolicyDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const { data: session } = useSession();
   const router = useRouter();
   const params = useParams();
   const policyId = params.policyId as string;
@@ -73,6 +97,7 @@ export default function PolicyDetailPage() {
       console.log('API Response:', result);
       if (response.ok) {
         console.log('Policy data:', result.data);
+        console.log('Policy status:', result.data?.status);
         console.log('Attachments in policy:', result.data?.attachments);
         setPolicy(result.data);
       } else {
@@ -109,6 +134,78 @@ export default function PolicyDetailPage() {
     }
   };
 
+  const handlePublish = async () => {
+    try {
+      setIsPublishing(true);
+      const response = await fetch(`/api/policies/${policyId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'publish'
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        // Refresh the policy data
+        await fetchPolicy();
+        // Also show a success message
+        setSubmitMessage({ type: 'success', text: 'Policy published successfully!' });
+        setTimeout(() => setSubmitMessage(null), 3000);
+      } else {
+        setError(result.message || 'Failed to publish policy');
+      }
+    } catch (err) {
+      setError('An error occurred while publishing the policy');
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  const handleRemoveAssignedUser = async (userIdToRemove: string) => {
+    try {
+      const response = await fetch(`/api/policies/${policyId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'removeAssignedUser',
+          userIdToRemove
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        // Refresh the policy data
+        await fetchPolicy();
+        // Show success message
+        setSubmitMessage({ type: 'success', text: 'User removed from policy successfully!' });
+        setTimeout(() => setSubmitMessage(null), 3000);
+      } else {
+        setError(result.message || 'Failed to remove user from policy');
+      }
+    } catch (err) {
+      setError('An error occurred while removing user from policy');
+    }
+  };
+
+  // Check if user can edit this policy
+  const canEdit = policy && (
+    session?.user?.role === 'admin' || 
+    policy.assigned_users?.some(user => user._id.toString() === session?.user?.id)
+  );
+
+  // Check if user can publish (only admins)
+  const canPublish = session?.user?.role === 'admin';
+
+  // Check if policy has pending changes
+  const hasPendingChanges = policy?.pending_changes && Object.keys(policy.pending_changes).length > 0;
+
   if (loading) {
     return (
       <div className="min-vh-100 d-flex align-items-center justify-content-center">
@@ -141,15 +238,77 @@ export default function PolicyDetailPage() {
         <div className="col-md-10 col-lg-8">
           <div className="card shadow border-0 mb-4">
             <div className="card-body p-4">
+              {/* Success Message */}
+              {submitMessage && (
+                <div className={`alert alert-${submitMessage.type === 'success' ? 'success' : 'danger'} alert-dismissible fade show mb-4`}>
+                  {submitMessage.text}
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={() => setSubmitMessage(null)}
+                  ></button>
+                </div>
+              )}
+
+              {/* Pending Changes Alert */}
+              {hasPendingChanges && (
+                <div className="alert alert-warning d-flex align-items-center mb-4" role="alert">
+                  <AlertCircle size={20} className="me-2" />
+                  <div>
+                    <strong>Pending Changes:</strong> This policy has unpublished changes waiting for admin approval.
+                    {canPublish && (
+                      <button
+                        className="btn btn-sm btn-warning ms-3"
+                        onClick={handlePublish}
+                        disabled={isPublishing}
+                      >
+                        {isPublishing ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            Publishing...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle size={16} className="me-2" />
+                            Publish Changes
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <h2 className="mb-0">{policy.title}</h2>
                 <div className="d-flex gap-2">
-                  <button
-                    className="btn btn-outline-primary"
-                    onClick={() => router.push(`/policy/${policy._id}/edit`)}
-                  >
-                    <Edit size={16} className="me-2" /> Edit
-                  </button>
+                  {canEdit && (
+                    <button
+                      className="btn btn-outline-primary"
+                      onClick={() => router.push(`/policy/${policy._id}/edit`)}
+                    >
+                      <Edit size={16} className="me-2" /> Edit
+                    </button>
+                  )}
+                  {canPublish && policy.status === 'draft' && (
+                    <button
+                      className="btn btn-outline-success"
+                      onClick={handlePublish}
+                      disabled={isPublishing}
+                    >
+                      {isPublishing ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                          Publishing...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle size={16} className="me-2" />
+                          Publish
+                        </>
+                      )}
+                    </button>
+                  )}
                   <button
                     className="btn btn-outline-danger"
                     onClick={() => setShowDeleteConfirm(true)}
@@ -227,6 +386,11 @@ export default function PolicyDetailPage() {
                 <span className="me-3">
                   <Globe size={14} className="me-1" /> {policy.organization}
                 </span>
+                <span className="me-3">
+                  <span className={`badge ${policy.status === 'active' ? 'bg-success' : 'bg-warning'}`}>
+                    {policy.status === 'active' ? 'Published' : 'Draft'}
+                  </span>
+                </span>
                 {policy.tags && policy.tags.length > 0 && (
                   <span>
                     <Tag size={14} className="me-1" />
@@ -238,10 +402,38 @@ export default function PolicyDetailPage() {
                   </span>
                 )}
               </div>
+
+              {/* Assigned Users */}
+              {policy.assigned_users && policy.assigned_users.length > 0 && (
+                <div className="mb-3">
+                  <strong>Assigned Users:</strong>
+                  <div className="mt-2">
+                    {policy.assigned_users.map((user, idx) => (
+                      <div key={user._id} className="d-flex align-items-center mb-2">
+                        <span className="badge bg-info me-2">
+                          {user.first_name} {user.last_name}
+                        </span>
+                        {canEdit && (
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-danger"
+                            onClick={() => handleRemoveAssignedUser(user._id)}
+                            title="Remove user from policy"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="mb-3">
                 <strong>Description:</strong>
                 <div className="text-muted mt-1">{policy.description}</div>
               </div>
+
               <div className="mb-4">
                 <h4 className="mb-3">Content</h4>
                 <div data-color-mode="light">
@@ -254,6 +446,36 @@ export default function PolicyDetailPage() {
                   )}
                 </div>
               </div>
+
+              {/* Pending Changes Preview */}
+              {hasPendingChanges && (
+                <div className="mb-4">
+                  <h4 className="mb-3 text-warning">
+                    <AlertCircle size={20} className="me-2" />
+                    Pending Changes Preview
+                  </h4>
+                  <div className="border border-warning rounded p-3 bg-light">
+                    {policy.pending_changes.title && (
+                      <div className="mb-2">
+                        <strong>New Title:</strong> {policy.pending_changes.title}
+                      </div>
+                    )}
+                    {policy.pending_changes.description && (
+                      <div className="mb-2">
+                        <strong>New Description:</strong> {policy.pending_changes.description}
+                      </div>
+                    )}
+                    {policy.pending_changes.content && (
+                      <div>
+                        <strong>New Content:</strong>
+                        <div data-color-mode="light" className="mt-2">
+                          <MarkdownPreview source={policy.pending_changes.content} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Attachments Section */}
               {policy.attachments && policy.attachments.length > 0 && (

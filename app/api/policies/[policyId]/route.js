@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '../../auth/[...nextauth]/route';
 import dbConnect from '../../../../components/lib/mongodb';
 import Policy from '../../../../models/Policy';
 import User from '../../../../models/User';
@@ -9,16 +10,55 @@ export async function GET(request, { params }) {
   try {
     await dbConnect();
     
+    // Get session to identify the user
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json(
+        { success: false, message: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Find the user by email
+    const user = await User.findOne({ email: session.user.email });
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: 'User not found' },
+        { status: 404 }
+      );
+    }
+
     const { policyId } = await params;
     
     const policy = await Policy.findById(policyId)
       .populate('created_by', 'first_name last_name email')
-      .populate('updated_by', 'first_name last_name email');
+      .populate('updated_by', 'first_name last_name email')
+      .populate('assigned_users', 'first_name last_name email');
 
     if (!policy) {
       return NextResponse.json(
         { success: false, message: 'Policy not found' },
         { status: 404 }
+      );
+    }
+
+    // Check visibility permissions
+    const canView = 
+      user.role === 'admin' || 
+      policy.status === 'active' || 
+      policy.assigned_users.some(assignedUser => assignedUser._id.toString() === user._id.toString());
+
+    console.log('Individual policy visibility check:');
+    console.log('User role:', user.role);
+    console.log('Policy status:', policy.status);
+    console.log('User ID:', user._id);
+    console.log('Assigned users:', policy.assigned_users?.map(u => u._id));
+    console.log('Can view:', canView);
+
+    if (!canView) {
+      return NextResponse.json(
+        { success: false, message: 'Access denied' },
+        { status: 403 }
       );
     }
 
@@ -42,7 +82,7 @@ export async function PATCH(request, { params }) {
     await dbConnect();
 
     // Get session to identify the user
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json(
         { success: false, message: 'Authentication required' },
@@ -63,7 +103,8 @@ export async function PATCH(request, { params }) {
       organization,
       status,
       attachments = [],
-      action
+      action,
+      assigned_users = []
     } = body;
     
     console.log('Edit API - Extracted attachments:', attachments);
@@ -78,7 +119,9 @@ export async function PATCH(request, { params }) {
     }
 
     // Find the policy
-    const policy = await Policy.findById(policyId);
+    const policy = await Policy.findById(policyId)
+      .populate('assigned_users', 'first_name last_name email');
+    
     if (!policy) {
       return NextResponse.json(
         { success: false, message: 'Policy not found' },
@@ -86,22 +129,102 @@ export async function PATCH(request, { params }) {
       );
     }
 
-    // Handle publish action
+    // Check if user can edit this policy
+    const canEdit = 
+      user.role === 'admin' || 
+      policy.assigned_users.some(assignedUser => assignedUser._id.toString() === user._id.toString());
+
+    if (!canEdit) {
+      return NextResponse.json(
+        { success: false, message: 'Insufficient permissions to edit this policy' },
+        { status: 403 }
+      );
+    }
+
+    // Handle publish action (only admins can publish)
     if (action === 'publish') {
-      const updatedPolicy = await Policy.findByIdAndUpdate(
-        policyId,
-        { 
-          status: 'active',
-          updated_by: user._id
-        },
-        { new: true, runValidators: true }
-      ).populate('created_by', 'first_name last_name email')
-       .populate('updated_by', 'first_name last_name email');
+      console.log('Publish action triggered');
+      console.log('User role:', user.role);
+      console.log('Current policy status:', policy.status);
+      console.log('Has pending changes:', policy.pending_changes && Object.keys(policy.pending_changes).length > 0);
+      
+      if (user.role !== 'admin') {
+        return NextResponse.json(
+          { success: false, message: 'Only admins can publish policies' },
+          { status: 403 }
+        );
+      }
+
+      // If policy has pending changes, publish them
+      if (policy.pending_changes && Object.keys(policy.pending_changes).length > 0) {
+        console.log('Publishing pending changes');
+        await policy.publishPendingChanges();
+      }
+      
+      // Always set status to active when publishing
+      console.log('Setting status to active');
+      policy.status = 'active';
+      policy.updated_by = user._id;
+      await policy.save();
+      console.log('Policy saved with status:', policy.status);
+
+      const updatedPolicy = await Policy.findById(policyId)
+        .populate('created_by', 'first_name last_name email')
+        .populate('updated_by', 'first_name last_name email')
+        .populate('assigned_users', 'first_name last_name email');
+
+      console.log('Updated policy status:', updatedPolicy.status);
 
       return NextResponse.json(
         { 
           success: true, 
           message: 'Policy published successfully',
+          data: updatedPolicy
+        },
+        { status: 200 }
+      );
+    }
+
+    // Handle remove assigned user action
+    if (action === 'removeAssignedUser') {
+      const { userIdToRemove } = body;
+      
+      if (!userIdToRemove) {
+        return NextResponse.json(
+          { success: false, message: 'User ID to remove is required' },
+          { status: 400 }
+        );
+      }
+
+      // Check if user can modify this policy
+      const canModify = 
+        user.role === 'admin' || 
+        policy.assigned_users.some(assignedUser => assignedUser._id.toString() === user._id.toString());
+
+      if (!canModify) {
+        return NextResponse.json(
+          { success: false, message: 'Insufficient permissions to modify this policy' },
+          { status: 403 }
+        );
+      }
+
+      // Remove the user from assigned_users
+      policy.assigned_users = policy.assigned_users.filter(
+        assignedUser => assignedUser._id.toString() !== userIdToRemove
+      );
+      
+      policy.updated_by = user._id;
+      await policy.save();
+
+      const updatedPolicy = await Policy.findById(policyId)
+        .populate('created_by', 'first_name last_name email')
+        .populate('updated_by', 'first_name last_name email')
+        .populate('assigned_users', 'first_name last_name email');
+
+      return NextResponse.json(
+        { 
+          success: true, 
+          message: 'User removed from policy successfully',
           data: updatedPolicy
         },
         { status: 200 }
@@ -141,44 +264,88 @@ export async function PATCH(request, { params }) {
       uploadedAt: new Date(attachment.uploadedAt || Date.now())
     }));
 
-    // Update the policy
-    const updateData = {
-      title: title.trim(),
-      content: content ? content.trim() : '',
-      description: description ? description.trim() : '',
-      category: category.trim(),
-      tags: parsedTags,
-      organization,
-      attachments: processedAttachments,
-      updated_by: user._id
-    };
+    // Prepare assigned users array
+    const assignedUsersArray = assigned_users && assigned_users.length > 0 
+      ? assigned_users 
+      : policy.assigned_users.map(user => user._id);
+    
+    // Ensure no duplicates in assigned users
+    const uniqueAssignedUsers = [...new Set(assignedUsersArray)];
 
-    // Include status if provided
-    if (status) {
-      updateData.status = status;
+    // If policy is published (active), save changes as pending_changes
+    if (policy.status === 'active') {
+      const pendingChanges = {
+        title: title.trim(),
+        content: content ? content.trim() : '',
+        description: description ? description.trim() : '',
+        category: category.trim(),
+        tags: parsedTags,
+        organization,
+        attachments: processedAttachments,
+        effective_date: new Date()
+      };
+
+      policy.pending_changes = pendingChanges;
+      policy.updated_by = user._id;
+      policy.assigned_users = uniqueAssignedUsers;
+
+      await policy.save();
+
+      const updatedPolicy = await Policy.findById(policyId)
+        .populate('created_by', 'first_name last_name email')
+        .populate('updated_by', 'first_name last_name email')
+        .populate('assigned_users', 'first_name last_name email');
+
+      return NextResponse.json(
+        { 
+          success: true, 
+          message: 'Changes saved as pending. An admin must approve and publish these changes.',
+          data: updatedPolicy
+        },
+        { status: 200 }
+      );
+    } else {
+      // For draft policies, update directly
+      const updateData = {
+        title: title.trim(),
+        content: content ? content.trim() : '',
+        description: description ? description.trim() : '',
+        category: category.trim(),
+        tags: parsedTags,
+        organization,
+        attachments: processedAttachments,
+        assigned_users: uniqueAssignedUsers,
+        updated_by: user._id
+      };
+
+      // Include status if provided (only admins can change status)
+      if (status && user.role === 'admin') {
+        updateData.status = status;
+      }
+
+      console.log('Edit API - Update data:', updateData);
+      console.log('Edit API - Processed attachments:', processedAttachments);
+
+      const updatedPolicy = await Policy.findByIdAndUpdate(
+        policyId,
+        updateData,
+        { new: true, runValidators: true }
+      ).populate('created_by', 'first_name last_name email')
+       .populate('updated_by', 'first_name last_name email')
+       .populate('assigned_users', 'first_name last_name email');
+       
+      console.log('Edit API - Updated policy:', updatedPolicy);
+      console.log('Edit API - Updated policy attachments:', updatedPolicy.attachments);
+
+      return NextResponse.json(
+        { 
+          success: true, 
+          message: 'Policy updated successfully',
+          data: updatedPolicy
+        },
+        { status: 200 }
+      );
     }
-
-    console.log('Edit API - Update data:', updateData);
-    console.log('Edit API - Processed attachments:', processedAttachments);
-
-    const updatedPolicy = await Policy.findByIdAndUpdate(
-      policyId,
-      updateData,
-      { new: true, runValidators: true }
-    ).populate('created_by', 'first_name last_name email')
-     .populate('updated_by', 'first_name last_name email');
-     
-    console.log('Edit API - Updated policy:', updatedPolicy);
-    console.log('Edit API - Updated policy attachments:', updatedPolicy.attachments);
-
-    return NextResponse.json(
-      { 
-        success: true, 
-        message: 'Policy updated successfully',
-        data: updatedPolicy
-      },
-      { status: 200 }
-    );
 
   } catch (error) {
     console.error('Error updating policy:', error);
@@ -212,7 +379,7 @@ export async function DELETE(request, { params }) {
     await dbConnect();
 
     // Get session to identify the user
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json(
         { success: false, message: 'Authentication required' },

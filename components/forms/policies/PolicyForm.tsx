@@ -20,6 +20,14 @@ interface PolicyAttachment {
   description?: string;
 }
 
+interface User {
+  _id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  role: string;
+}
+
 interface PolicyFormProps {
   form: {
     title: string;
@@ -30,6 +38,7 @@ interface PolicyFormProps {
     body?: string;
     content?: string;
     status?: string;
+    isDraft?: boolean;
   };
   attachments: PolicyAttachment[];
   onAttachmentsChange: (attachments: PolicyAttachment[]) => void;
@@ -46,6 +55,12 @@ interface PolicyFormProps {
   isPublishing?: boolean;
   hasChanges?: boolean;
   onCancel?: () => void;
+  // New props for user selection
+  availableUsers?: User[];
+  selectedUsers?: string[];
+  onUserSelection?: (userId: string, isSelected: boolean) => void;
+  loadingUsers?: boolean;
+  isAdmin?: boolean;
 }
 
 function PolicyForm({
@@ -64,7 +79,12 @@ function PolicyForm({
   onPublishPolicy,
   isPublishing = false,
   hasChanges = false,
-  onCancel
+  onCancel,
+  availableUsers = [],
+  selectedUsers = [],
+  onUserSelection,
+  loadingUsers = false,
+  isAdmin = false
 }: PolicyFormProps) {
   const router = useRouter();
   const isEditMode = mode === 'edit';
@@ -104,13 +124,22 @@ function PolicyForm({
 
                 <div className="mb-3">
                   <label className="form-label fw-semibold">Category *</label>
-                  <input
+                  <select
                     name="category"
-                    className={`form-control${errors.category ? " is-invalid" : ""}`}
+                    className={`form-select${errors.category ? " is-invalid" : ""}`}
                     value={form.category}
                     onChange={handleChange}
                     required
-                  />
+                  >
+                    <option value="">Select a category</option>
+                    <option value="HR">HR</option>
+                    <option value="Culture">Culture</option>
+                    <option value="Documentation">Documentation</option>
+                    <option value="Process">Process</option>
+                    <option value="Safety">Safety</option>
+                    <option value="Quality">Quality</option>
+                    <option value="Other">Other</option>
+                  </select>
                   {errors.category && <div className="invalid-feedback">{errors.category}</div>}
                 </div>
 
@@ -152,6 +181,53 @@ function PolicyForm({
                   />
                 </div>
 
+                {/* User Assignment Section */}
+                {!isEditMode && (
+                  <div className="mb-4">
+                    <label className="form-label fw-semibold">
+                      Assigned Users *
+                      {!isAdmin && (
+                        <span className="text-muted ms-2">(You must assign at least one admin for review)</span>
+                      )}
+                    </label>
+                    
+                    {loadingUsers ? (
+                      <div className="text-center py-3">
+                        <div className="spinner-border spinner-border-sm" role="status">
+                          <span className="visually-hidden">Loading users...</span>
+                        </div>
+                        <span className="ms-2">Loading users...</span>
+                      </div>
+                    ) : (
+                      <div className="border rounded p-3 bg-light">
+                        {availableUsers.map((user) => (
+                          <div key={user._id} className="form-check mb-2">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              id={`user-${user._id}`}
+                              checked={selectedUsers.includes(user._id)}
+                              onChange={(e) => onUserSelection?.(user._id, e.target.checked)}
+                              disabled={isSubmitting}
+                            />
+                            <label className="form-check-label" htmlFor={`user-${user._id}`}>
+                              <span className="fw-medium">{user.first_name} {user.last_name}</span>
+                              <span className="text-muted ms-2">({user.email})</span>
+                              <span className={`badge ms-2 ${user.role === 'admin' ? 'bg-danger' : 'bg-secondary'}`}>
+                                {user.role}
+                              </span>
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {errors.assignedUsers && (
+                      <div className="invalid-feedback d-block">{errors.assignedUsers}</div>
+                    )}
+                  </div>
+                )}
+
                 {/* File Upload Section */}
                 <div className="mb-4">
                   <PolicyFileUpload
@@ -161,17 +237,29 @@ function PolicyForm({
                   />
                 </div>
                 
+                {/* Draft Checkbox - Only show for admins or hide for non-admins */}
                 {!isEditMode && (
                   <div className="mb-3">
-                    <label className="form-label fw-semibold">Draft </label>
-                    <input
-                      type="checkbox"
-                      name="status"
-                      className="form-check-input ml-10"
-                      value="draft"
-                      onChange={handleChange}
-                      placeholder="draft"
-                    />
+                    <div className="form-check">
+                      <input
+                        type="checkbox"
+                        name="isDraft"
+                        className="form-check-input"
+                        id="isDraft"
+                        checked={form.isDraft}
+                        onChange={handleChange}
+                        disabled={isSubmitting || !isAdmin}
+                      />
+                      <label className="form-check-label" htmlFor="isDraft">
+                        <strong>Save as Draft</strong>
+                        {!isAdmin && (
+                          <span className="text-muted ms-2">(Draft policies require admin review before publishing)</span>
+                        )}
+                        {isAdmin && (
+                          <span className="text-muted ms-2">(Uncheck to publish immediately)</span>
+                        )}
+                      </label>
+                    </div>
                   </div>
                 )}
 

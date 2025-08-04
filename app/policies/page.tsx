@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { 
   FileText, 
   Search, 
@@ -33,6 +34,14 @@ interface Policy {
   category: string;
   organization: string;
   tags: string[];
+  status: string;
+  pending_changes?: any;
+  assigned_users?: Array<{
+    _id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+  }>;
   created_at: string;
   created_by: {
     first_name: string;
@@ -58,6 +67,7 @@ export default function PoliciesPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deletePolicyId, setDeletePolicyId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const { data: session, status } = useSession();
   const router = useRouter();
 
   // Icon mapping for categories
@@ -79,8 +89,17 @@ export default function PoliciesPage() {
   };
 
   useEffect(() => {
-    fetchPolicies();
-  }, []);
+    if (status === 'loading') return; // Still loading
+    
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin');
+      return;
+    }
+    
+    if (status === 'authenticated') {
+      fetchPolicies();
+    }
+  }, [status, session]);
 
   useEffect(() => {
     // Group policies by category and create stats
@@ -182,6 +201,26 @@ export default function PoliciesPage() {
       day: 'numeric'
     });
   };
+
+  const getStatusBadge = (policy: Policy) => {
+    if (policy.pending_changes && Object.keys(policy.pending_changes).length > 0) {
+      return <span className="badge bg-warning">Pending Changes</span>;
+    }
+    if (policy.status === 'active') {
+      return <span className="badge bg-success">Published</span>;
+    }
+    return <span className="badge bg-secondary">Draft</span>;
+  };
+
+  if (status === 'loading') {
+    return (
+      <div className="min-vh-100 d-flex align-items-center justify-content-center">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -431,9 +470,12 @@ export default function PoliciesPage() {
                       </p>
                       
                       <div className="mb-3">
-                        <span className="badge bg-primary me-2">{policy.category}</span>
+                        <div className="mb-2">
+                          {getStatusBadge(policy)}
+                          <span className="badge bg-primary ms-2">{policy.category}</span>
+                        </div>
                         {policy.tags && policy.tags.length > 0 && (
-                          <div className="mt-2">
+                          <div>
                             {policy.tags.slice(0, 3).map((tag, index) => (
                               <span key={index} className="badge bg-light text-dark me-1 small">
                                 {tag}

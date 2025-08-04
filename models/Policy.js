@@ -123,6 +123,10 @@ const PolicySchema = new mongoose.Schema({
       'mertz_production'
     ]
   },
+  assigned_users: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
   attachments: [{
     fileName: {
       type: String,

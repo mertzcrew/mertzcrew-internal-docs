@@ -3,7 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import dbConnect from '../../../../components/lib/mongodb';
 import User from '../../../../models/User';
 
-const handler = NextAuth({
+export const authOptions = {
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -59,6 +59,7 @@ const handler = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        token.id = user.id;
         token.role = user.role;
         token.permissions = user.permissions;
         token.department = user.department;
@@ -69,7 +70,7 @@ const handler = NextAuth({
     },
     async session({ session, token }) {
       if (token) {
-        session.user.id = token.sub;
+        session.user.id = token.sub || token.id;
         session.user.role = token.role;
         session.user.permissions = token.permissions;
         session.user.department = token.department;
@@ -84,6 +85,8 @@ const handler = NextAuth({
     error: '/auth/error',
   },
   secret: process.env.NEXTAUTH_SECRET,
-});
+};
+
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST }; 
