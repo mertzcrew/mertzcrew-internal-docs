@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSession, signOut } from "next-auth/react"
 import {
   Search,
@@ -30,14 +30,81 @@ import PopularDocumentItem from './ui/PopularDocumentItem';
 import StatCard from './ui/StatCard';
 import { useRouter } from 'next/navigation';
 
+interface Policy {
+  _id: string;
+  title: string;
+  content: string;
+  description: string;
+  category: string;
+  status: string;
+  created_by: {
+    _id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
+  created_at: string;
+  updated_at: string;
+  views?: number;
+}
+
 export default function Dashboard() {
   const [activeNav, setActiveNav] = useState("dashboard")
+  const [recentDocuments, setRecentDocuments] = useState<Policy[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const { data: session, status } = useSession()
   const router = useRouter();
 
   const handleSignOut = () => {
     signOut({ callbackUrl: '/' })
   }
+
+  // Fetch recent published documents
+  useEffect(() => {
+    const fetchRecentDocuments = async () => {
+      try {
+        setError(null);
+        console.log('Dashboard - Fetching recent documents...');
+        const response = await fetch('/api/policies?status=active&limit=4&sort=created_at:desc', {
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        console.log('Dashboard - Response status:', response.status);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Dashboard - API response:', data);
+          if (data.success) {
+            console.log('Dashboard - Setting recent documents:', data.policies);
+            setRecentDocuments(data.policies || []);
+          } else {
+            console.log('Dashboard - API error:', data.message);
+            setError(data.message || 'Failed to fetch recent documents');
+          }
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          console.log('Dashboard - HTTP error:', errorData);
+          setError(errorData.message || `HTTP ${response.status}: Failed to fetch recent documents`);
+        }
+      } catch (error) {
+        console.error('Dashboard - Error fetching recent documents:', error);
+        setError('Network error: Failed to fetch recent documents');
+      } finally {
+        setLoading(false);
+      }
+    };
+    console.log('line 99', recentDocuments);
+
+    if (status === 'authenticated') {
+      console.log('Dashboard - User authenticated, fetching documents...');
+      fetchRecentDocuments();
+    } else {
+      console.log('Dashboard - User not authenticated, status:', status);
+    }
+  }, [status]);
 
   // Show loading while session is being fetched
   if (status === 'loading') {
@@ -79,33 +146,6 @@ export default function Dashboard() {
       change: "4 created this week",
       icon: Folder,
       color: "text-warning",
-    },
-  ]
-
-  const recentDocuments = [
-    {
-      title: "Employee Handbook 2024",
-      author: "HR Team",
-      time: "2 hours ago",
-      views: 89,
-    },
-    {
-      title: "Safety Protocols Update",
-      author: "Safety Committee",
-      time: "1 day ago",
-      views: 156,
-    },
-    {
-      title: "New Hire Onboarding Checklist",
-      author: "Jennifer Martinez",
-      time: "2 days ago",
-      views: 234,
-    },
-    {
-      title: "Company Culture Guidelines",
-      author: "Leadership Team",
-      time: "3 days ago",
-      views: 178,
     },
   ]
 
@@ -213,18 +253,41 @@ export default function Dashboard() {
             <div className="card border-0 shadow-sm">
               <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                 <h5 className="mb-0">Recent Documents</h5>
-                <button className="btn btn-link text-decoration-none p-0">View All</button>
+                <button 
+                  className="btn btn-link text-decoration-none p-0"
+                  onClick={() => router.push('/policies')}
+                >
+                  View All
+                </button>
               </div>
               <div className="card-body p-0">
-                {recentDocuments.map((doc, index) => (
-                  <RecentDocumentItem
-                    key={index}
-                    title={doc.title}
-                    author={doc.author}
-                    time={doc.time}
-                    views={doc.views}
-                  />
-                ))}
+                {loading ? (
+                  <div className="text-center py-4">
+                    <div className="spinner-border spinner-border-sm me-2" role="status">
+                      <span className="visually-hidden">Loading...</span>
+                    </div>
+                    Loading documents...
+                  </div>
+                ) : error ? (
+                  <div className="text-center py-4 text-danger">
+                    <small>{error}</small>
+                  </div>
+                ) : recentDocuments.length === 0 ? (
+                  <div className="text-center py-4 text-muted">
+                    <small>No recent documents found.</small>
+                  </div>
+                ) : (
+                  recentDocuments.map((doc, index) => (
+                    <RecentDocumentItem
+                      key={doc._id}
+                      id={doc._id}
+                      title={doc.title}
+                      author={`${doc.created_by?.first_name} ${doc.created_by?.last_name}`}
+                      time={new Date(doc.created_at).toLocaleDateString()}
+                      views={doc.views || 0}
+                    />
+                  ))
+                )}
               </div>
             </div>
           </div>

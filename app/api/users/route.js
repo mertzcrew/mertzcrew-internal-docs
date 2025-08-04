@@ -118,18 +118,41 @@ export async function POST(request) {
 }
 
 // GET route to fetch all users (optional)
-export async function GET() {
+export async function GET(request) {
   try {
     await dbConnect();
     
-    const users = await User.find({})
-      .select('-password -emailVerificationToken -emailVerificationExpires -passwordResetToken -passwordResetExpires')
-      .sort({ createdAt: -1 });
+    // Get query parameters
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search');
+    const limit = parseInt(searchParams.get('limit')) || 0;
+    
+    let usersQuery = User.find({ isActive: true })
+      .select('-password -emailVerificationToken -emailVerificationExpires -passwordResetToken -passwordResetExpires');
+
+    // Apply search filter if provided
+    if (search && search.trim().length > 0) {
+      const searchRegex = new RegExp(search.trim(), 'i');
+      usersQuery = usersQuery.find({
+        $or: [
+          { first_name: searchRegex },
+          { last_name: searchRegex },
+          { email: searchRegex }
+        ]
+      });
+    }
+
+    // Apply limit if provided
+    if (limit > 0) {
+      usersQuery = usersQuery.limit(limit);
+    }
+
+    const users = await usersQuery.sort({ first_name: 1, last_name: 1 });
 
     return NextResponse.json(
       { 
         success: true, 
-        data: users 
+        users: users 
       },
       { status: 200 }
     );

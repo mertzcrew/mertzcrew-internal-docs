@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import "@uiw/react-md-editor/markdown-editor.css";
 import "@uiw/react-markdown-preview/markdown.css";
 import PolicyFileUpload from "../../ui/PolicyFileUpload";
+import UserAssignmentInput from './UserAssignmentInput';
 
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
 
@@ -61,6 +62,7 @@ interface PolicyFormProps {
   onUserSelection?: (userId: string, isSelected: boolean) => void;
   loadingUsers?: boolean;
   isAdmin?: boolean;
+  currentUserId?: string;
 }
 
 function PolicyForm({
@@ -84,7 +86,8 @@ function PolicyForm({
   selectedUsers = [],
   onUserSelection,
   loadingUsers = false,
-  isAdmin = false
+  isAdmin = false,
+  currentUserId
 }: PolicyFormProps) {
   const router = useRouter();
   const isEditMode = mode === 'edit';
@@ -182,50 +185,34 @@ function PolicyForm({
                 </div>
 
                 {/* User Assignment Section */}
-                {!isEditMode && (
-                  <div className="mb-4">
-                    <label className="form-label fw-semibold">
-                      Assigned Users *
-                      {!isAdmin && (
-                        <span className="text-muted ms-2">(You must assign at least one admin for review)</span>
-                      )}
-                    </label>
-                    
-                    {loadingUsers ? (
-                      <div className="text-center py-3">
-                        <div className="spinner-border spinner-border-sm" role="status">
-                          <span className="visually-hidden">Loading users...</span>
-                        </div>
-                        <span className="ms-2">Loading users...</span>
-                      </div>
-                    ) : (
-                      <div className="border rounded p-3 bg-light">
-                        {availableUsers.map((user) => (
-                          <div key={user._id} className="form-check mb-2">
-                            <input
-                              className="form-check-input"
-                              type="checkbox"
-                              id={`user-${user._id}`}
-                              checked={selectedUsers.includes(user._id)}
-                              onChange={(e) => onUserSelection?.(user._id, e.target.checked)}
-                              disabled={isSubmitting}
-                            />
-                            <label className="form-check-label" htmlFor={`user-${user._id}`}>
-                              <span className="fw-medium">{user.first_name} {user.last_name}</span>
-                              <span className="text-muted ms-2">({user.email})</span>
-                              <span className={`badge ms-2 ${user.role === 'admin' ? 'bg-danger' : 'bg-secondary'}`}>
-                                {user.role}
-                              </span>
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {errors.assignedUsers && (
-                      <div className="invalid-feedback d-block">{errors.assignedUsers}</div>
-                    )}
-                  </div>
+                {availableUsers && selectedUsers && onUserSelection && (
+                  <UserAssignmentInput
+                    assignedUsers={availableUsers.filter(user => selectedUsers.includes(user._id))}
+                    onUsersChange={(users) => {
+                      // Convert User objects back to selected user IDs
+                      const userIds = users.map(user => user._id);
+                      // Update selected users by calling onUserSelection for each change
+                      const currentSelectedIds = new Set(selectedUsers);
+                      const newSelectedIds = new Set(userIds);
+                      
+                      // Add users that are in new selection but not in current
+                      userIds.forEach(userId => {
+                        if (!currentSelectedIds.has(userId)) {
+                          onUserSelection(userId, true);
+                        }
+                      });
+                      
+                      // Remove users that are in current selection but not in new
+                      selectedUsers.forEach(userId => {
+                        if (!newSelectedIds.has(userId)) {
+                          onUserSelection(userId, false);
+                        }
+                      });
+                    }}
+                    currentUserId={currentUserId}
+                    disabled={isSubmitting}
+                    error={errors.assignedUsers}
+                  />
                 )}
 
                 {/* File Upload Section */}

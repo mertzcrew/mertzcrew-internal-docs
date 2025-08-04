@@ -65,20 +65,25 @@ export default function NewPolicyPage() {
     }
   }, [status]);
 
+  // Fetch available users for assignment
   const fetchUsers = async () => {
     try {
       setLoadingUsers(true);
-      const response = await fetch('/api/users');
-      const result = await response.json();
+      const response = await fetch('/api/users', {
+        credentials: 'include',
+      });
       
       if (response.ok) {
-        setAvailableUsers(result.data);
-        // Set the current user as default selected user
-        if (session?.user?.id) {
-          setSelectedUsers([session.user.id]);
+        const data = await response.json();
+        if (data.success) {
+          setAvailableUsers(data.users || []);
+          
+          // Automatically add the current user to selected users if they exist in the available users
+          const currentUser = data.users.find((user: User) => user._id === session?.user?.id);
+          if (currentUser && !selectedUsers.includes(currentUser._id)) {
+            setSelectedUsers([currentUser._id]);
+          }
         }
-      } else {
-        console.error('Failed to fetch users:', result.message);
       }
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -156,6 +161,11 @@ export default function NewPolicyPage() {
       }
     }
     
+    // Ensure at least one user is assigned (current user should be automatically included)
+    if (selectedUsers.length === 0) {
+      errs.assignedUsers = "At least one user must be assigned to the policy";
+    }
+    
     console.log('Validation - errors:', errs);
     return errs;
   }
@@ -184,13 +194,16 @@ export default function NewPolicyPage() {
           tags: form.tags,
           status: form.status,
           isDraft: form.isDraft,
-          assigned_users: selectedUsers,
+          assigned_users: selectedUsers.filter(userId => userId !== session?.user?.id), // Exclude current user since API adds them automatically
           attachments: attachments
         };
         
         console.log('Frontend - Request body being sent:', requestBody);
         console.log('Frontend - Category value:', form.category);
         console.log('Frontend - Organization value:', form.organization);
+        console.log('Frontend - Selected users (including current):', selectedUsers);
+        console.log('Frontend - Assigned users (excluding current):', requestBody.assigned_users);
+        console.log('Frontend - Current user ID:', session?.user?.id);
         
         const response = await fetch('/api/policies', {
           method: 'POST',
@@ -268,6 +281,7 @@ export default function NewPolicyPage() {
       onUserSelection={handleUserSelection}
       loadingUsers={loadingUsers}
       isAdmin={isAdmin}
+      currentUserId={session?.user?.id}
     />
   )
 } 
