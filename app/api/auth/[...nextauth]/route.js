@@ -43,7 +43,8 @@ export const authOptions = {
             permissions: user.permissions,
             department: user.department,
             position: user.position,
-            avatar: user.avatar
+            avatar: user.avatar,
+            organization: user.organization
           };
         } catch (error) {
           console.error('Auth error:', error);
@@ -65,6 +66,7 @@ export const authOptions = {
         token.department = user.department;
         token.position = user.position;
         token.avatar = user.avatar;
+        token.organization = user.organization;
       }
       return token;
     },
@@ -76,6 +78,7 @@ export const authOptions = {
         session.user.department = token.department;
         session.user.position = token.position;
         session.user.avatar = token.avatar;
+        session.user.organization = token.organization;
       }
       return session;
     }

@@ -38,7 +38,7 @@ interface PolicyFormValues {
 const initialForm: PolicyFormValues = {
   title: "",
   category: "",
-  organization: "all",
+  organization: "",
   description: "",
   tags: "",
   body: "",
@@ -58,12 +58,28 @@ export default function NewPolicyPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  // Fetch available users on component mount
+  // Fetch available users on component mount and set user's organization
   useEffect(() => {
+    console.log('useEffect triggered - status:', status, 'session:', session?.user?.organization, 'form.organization:', form.organization);
+    
     if (status === 'authenticated') {
       fetchUsers();
+      
+      // Set the user's organization as default if not already set
+      if (session?.user?.organization && !form.organization) {
+        console.log('Setting organization to user organization:', session.user.organization);
+        setForm(prev => ({ ...prev, organization: session.user.organization! }));
+      }
     }
-  }, [status]);
+  }, [status, session?.user?.organization, form.organization]);
+
+  // Separate useEffect to handle organization setting
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.organization && form.organization === '') {
+      console.log('Setting organization from session:', session.user.organization);
+      setForm(prev => ({ ...prev, organization: session.user.organization! }));
+    }
+  }, [status, session?.user?.organization, form.organization]);
 
   // Fetch available users for assignment
   const fetchUsers = async () => {

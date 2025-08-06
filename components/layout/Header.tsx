@@ -19,6 +19,7 @@ function Header({ activeNav, setActiveNav, isAdmin }: { activeNav: string, setAc
 	if (isAdmin) {
 		sidebarItems = [
 			{ id: "adduser", label: "Add User", icon: UserPlus },
+			{ id: "sessiontest", label: "Session Test", icon: BookOpenText },
 		]
 	}
 	return (
@@ -36,6 +37,7 @@ function Header({ activeNav, setActiveNav, isAdmin }: { activeNav: string, setAc
 					if (item.id === "dashboard") router.push("/dashboard");
 					if (item.id === "policies") router.push("/policies");
 					if (item.id === "adduser") router.push("/add-user");
+					if (item.id === "sessiontest") router.push("/session-test");
 					if (item.id === "hr") router.push("/policies/HR");
 					if (item.id === "culture") router.push("/policies/Culture");
 					if (item.id === "training") router.push("/policies/Training");

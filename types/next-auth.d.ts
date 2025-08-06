@@ -12,6 +12,7 @@ declare module "next-auth" {
       department?: string
       position?: string
       avatar?: string
+      organization?: string
     }
   }
 
@@ -24,6 +25,7 @@ declare module "next-auth" {
     department?: string
     position?: string
     avatar?: string
+    organization?: string
   }
 }
 
@@ -34,5 +36,6 @@ declare module "next-auth/jwt" {
     department?: string
     position?: string
     avatar?: string
+    organization?: string
   }
 } 

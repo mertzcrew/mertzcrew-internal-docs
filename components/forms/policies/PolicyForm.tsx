@@ -155,6 +155,7 @@ function PolicyForm({
                     onChange={handleChange}
                     required
                   >
+                    <option value="">Select Organization</option>
                     <option value="all">All Organizations</option>
                     <option value="mertzcrew">Mertzcrew</option>
                     <option value="mertz_production">Mertz Production</option>
