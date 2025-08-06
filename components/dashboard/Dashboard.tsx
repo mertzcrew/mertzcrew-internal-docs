@@ -355,6 +355,7 @@ export default function Dashboard() {
             <div className="card border-0 shadow-sm">
               <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                 <h5 className="mb-0">Pinned Documents</h5>
+                <button className="btn btn-link text-decoration-none p-0">View All</button>
               </div>
               <div className="card-body p-0">
                 {popularDocuments.map((doc, index) => (

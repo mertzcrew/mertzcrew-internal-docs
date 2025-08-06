@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Edit, ArrowLeft, Tag, BookOpen, Users, Building2, Star, Globe, Download, ExternalLink, FileText, Trash2, AlertCircle, CheckCircle } from "lucide-react";
+import { Edit, ArrowLeft, Tag, BookOpen, Users, Building2, Star, Globe, Download, ExternalLink, FileText, Trash2, AlertCircle, CheckCircle, Pin, PinOff } from "lucide-react";
 import dynamic from "next/dynamic";
 import "@uiw/react-markdown-preview/markdown.css";
 
@@ -79,6 +79,8 @@ export default function PolicyDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isPinning, setIsPinning] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const { data: session } = useSession();
   const router = useRouter();
@@ -89,6 +91,13 @@ export default function PolicyDetailPage() {
     fetchPolicy();
   }, [policyId]);
 
+  // Separate useEffect to check pin status when session is available
+  useEffect(() => {
+    if (session?.user?.id && policy) {
+      checkPinStatus();
+    }
+  }, [session, policy]);
+
   const fetchPolicy = async () => {
     try {
       setLoading(true);
@@ -98,15 +107,87 @@ export default function PolicyDetailPage() {
       if (response.ok) {
         console.log('Policy data:', result.data);
         console.log('Policy status:', result.data?.status);
-        console.log('Attachments in policy:', result.data?.attachments);
         setPolicy(result.data);
       } else {
-        setError(result.message || "Policy not found");
+        setError(result.message || "Failed to fetch policy");
       }
-    } catch (err) {
+    } catch (error) {
+      console.error('Error fetching policy:', error);
       setError("An error occurred while fetching the policy");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkPinStatus = async () => {
+    if (!session?.user?.id) {
+      console.log('checkPinStatus: No session available, skipping pin check');
+      return;
+    }
+    
+    try {
+      console.log('checkPinStatus: Checking pin status for policy:', policyId);
+      console.log('checkPinStatus: Session user ID:', session.user.id);
+      const response = await fetch(`/api/policies/${policyId}?action=checkPin`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      if (response.ok) {
+        const result = await response.json();
+        console.log('checkPinStatus: API response:', result);
+        setIsPinned(result.isPinned || false);
+      } else {
+        console.error('checkPinStatus: API error:', response.status);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('checkPinStatus: API error data:', errorData);
+      }
+    } catch (error) {
+      console.error('Error checking pin status:', error);
+    }
+  };
+
+  const handleTogglePin = async () => {
+    if (!session?.user?.id) return;
+    
+    console.log('handleTogglePin: Current pin status:', isPinned);
+    setIsPinning(true);
+    try {
+      const response = await fetch(`/api/policies/${policyId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'togglePin'
+        }),
+      });
+
+      const result = await response.json();
+      console.log('handleTogglePin: API response:', result);
+      if (response.ok) {
+        console.log('handleTogglePin: Setting pin status to:', result.isPinned);
+        setIsPinned(result.isPinned);
+        setSubmitMessage({ 
+          type: 'success', 
+          text: result.message 
+        });
+        setTimeout(() => setSubmitMessage(null), 3000);
+      } else {
+        setSubmitMessage({ 
+          type: 'error', 
+          text: result.message || 'Failed to toggle pin' 
+        });
+      }
+    } catch (error) {
+      console.error('Error toggling pin:', error);
+      setSubmitMessage({ 
+        type: 'error', 
+        text: 'An error occurred while toggling pin' 
+      });
+    } finally {
+      setIsPinning(false);
     }
   };
 
@@ -231,6 +312,8 @@ export default function PolicyDetailPage() {
 
   console.log('Rendering policy with attachments:', policy.attachments);
   console.log('Attachments length:', policy.attachments?.length);
+  console.log('Current pin status:', isPinned);
+  console.log('Session available:', !!session?.user?.id);
 
   return (
     <div className="container py-5">
@@ -282,6 +365,27 @@ export default function PolicyDetailPage() {
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <h2 className="mb-0">{policy.title}</h2>
                 <div className="d-flex gap-2">
+                  {/* Pin/Unpin Button */}
+                  <button
+                    className={`btn ${isPinned ? 'btn-warning' : 'btn-outline-warning'}`}
+                    onClick={handleTogglePin}
+                    disabled={isPinning}
+                    title={isPinned ? 'Unpin Policy' : 'Pin Policy'}
+                  >
+                    {isPinning ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        {isPinned ? 'Unpinning...' : 'Pinning...'}
+                      </>
+                    ) : (
+                      <>
+                        {isPinned ? <PinOff size={16} className="me-2" /> : <Pin size={16} className="me-2" />}
+                        {isPinned ? 'Unpin' : 'Pin'}
+                      </>
+                    )}
+                  </button>
+
+                  
                   {canEdit && (
                     <button
                       className="btn btn-outline-primary"

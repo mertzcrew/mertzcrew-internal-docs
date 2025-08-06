@@ -4,6 +4,7 @@ import { authOptions } from '../../auth/[...nextauth]/route';
 import dbConnect from '../../../../components/lib/mongodb';
 import Policy from '../../../../models/Policy';
 import User from '../../../../models/User';
+import UserPinnedPolicy from '../../../../models/UserPinnedPolicy';
 
 // GET a single policy by ID
 export async function GET(request, { params }) {
@@ -29,6 +30,31 @@ export async function GET(request, { params }) {
     }
 
     const { policyId } = await params;
+    
+    // Check if this is a pin status check request
+    const url = new URL(request.url);
+    const action = url.searchParams.get('action');
+    
+    if (action === 'checkPin') {
+      try {
+        const userPinnedPolicies = await UserPinnedPolicy.findOne({ userId: user._id });
+        const isPinned = userPinnedPolicies ? 
+          userPinnedPolicies.pinnedPolicies.some(policy => policy.toString() === policyId) : false;
+        
+        console.log('GET Check pin status - User ID:', user._id);
+        console.log('GET Check pin status - Policy ID:', policyId);
+        console.log('GET Check pin status - User pinned policies:', userPinnedPolicies?.pinnedPolicies?.map(p => p.toString()));
+        console.log('GET Check pin status - Is pinned:', isPinned);
+        
+        return NextResponse.json({
+          success: true,
+          isPinned: isPinned
+        });
+      } catch (error) {
+        console.error('Error checking pin status:', error);
+        return NextResponse.json({ success: false, message: 'Failed to check pin status' }, { status: 500 });
+      }
+    }
     
     const policy = await Policy.findById(policyId)
       .populate('created_by', 'first_name last_name email')
@@ -184,6 +210,63 @@ export async function PATCH(request, { params }) {
         { status: 200 }
       );
     }
+
+    // Handle pin/unpin action
+    if (action === 'togglePin') {
+      if (!session) {
+        return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
+      }
+
+      try {
+        const policy = await Policy.findById(policyId);
+        if (!policy) {
+          return NextResponse.json({ success: false, message: 'Policy not found' }, { status: 404 });
+        }
+
+        // Get or create user's pinned policies
+        let userPinnedPolicies = await UserPinnedPolicy.findOne({ userId: user._id });
+        
+        if (!userPinnedPolicies) {
+          userPinnedPolicies = new UserPinnedPolicy({
+            userId: user._id,
+            pinnedPolicies: []
+          });
+        }
+
+        const isPinned = userPinnedPolicies.pinnedPolicies.some(policy => policy.toString() === policyId);
+        
+        console.log('Toggle pin - User ID:', user._id);
+        console.log('Toggle pin - Policy ID:', policyId);
+        console.log('Toggle pin - Current pinned policies:', userPinnedPolicies.pinnedPolicies.map(p => p.toString()));
+        console.log('Toggle pin - Is currently pinned:', isPinned);
+        
+        if (isPinned) {
+          // Unpin the policy
+          userPinnedPolicies.pinnedPolicies = userPinnedPolicies.pinnedPolicies.filter(
+            id => id.toString() !== policyId
+          );
+          console.log('Toggle pin - Unpinning policy');
+        } else {
+          // Pin the policy
+          userPinnedPolicies.pinnedPolicies.push(policyId);
+          console.log('Toggle pin - Pinning policy');
+        }
+
+        await userPinnedPolicies.save();
+        console.log('Toggle pin - Updated pinned policies:', userPinnedPolicies.pinnedPolicies.map(p => p.toString()));
+
+        return NextResponse.json({
+          success: true,
+          message: isPinned ? 'Policy unpinned successfully' : 'Policy pinned successfully',
+          isPinned: !isPinned
+        });
+      } catch (error) {
+        console.error('Error toggling pin:', error);
+        return NextResponse.json({ success: false, message: 'Failed to toggle pin' }, { status: 500 });
+      }
+    }
+
+
 
     // Handle remove assigned user action
     if (action === 'removeAssignedUser') {
