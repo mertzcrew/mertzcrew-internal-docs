@@ -3,16 +3,41 @@ import React, { useState } from 'react';
 import Header from './Header';
 import { User, Settings, LogOut, Building2 } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 function Sidebar() {
   const [activeNav, setActiveNav] = useState("dashboard");
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const handleSignOut = () => signOut({ callbackUrl: '/' });
+
+  const handleBrandClick = () => {
+    if (status === 'authenticated') {
+      router.push('/dashboard');
+    }
+  };
 
   return (
     <div className="bg-white border-end" style={{ width: "280px", minHeight: "100vh" }}>
       <div className="p-3 border-bottom">
-        <div className="d-flex align-items-center">
+        <div 
+          className="d-flex align-items-center"
+          onClick={handleBrandClick}
+          style={{ 
+            cursor: status === 'authenticated' ? 'pointer' : 'default',
+            transition: 'opacity 0.2s ease'
+          }}
+          onMouseEnter={(e) => {
+            if (status === 'authenticated') {
+              e.currentTarget.style.opacity = '0.7';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (status === 'authenticated') {
+              e.currentTarget.style.opacity = '1';
+            }
+          }}
+        >
           <div
             className="rounded me-2 d-flex align-items-center justify-content-center"
             style={{

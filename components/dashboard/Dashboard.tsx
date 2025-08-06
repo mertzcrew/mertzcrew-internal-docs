@@ -43,8 +43,8 @@ interface Policy {
     last_name: string;
     email: string;
   };
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
   views?: number;
 }
 
@@ -66,7 +66,7 @@ export default function Dashboard() {
       try {
         setError(null);
         console.log('Dashboard - Fetching recent documents...');
-        const response = await fetch('/api/policies?status=active&limit=4&sort=created_at:desc', {
+        const response = await fetch(`/api/policies?dashboard=true&_t=${Date.now()}`, {
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
@@ -78,8 +78,11 @@ export default function Dashboard() {
           const data = await response.json();
           console.log('Dashboard - API response:', data);
           if (data.success) {
-            console.log('Dashboard - Setting recent documents:', data.policies);
-            setRecentDocuments(data.policies || []);
+            console.log('Dashboard - Setting recent documents:', data.data);
+            console.log('Dashboard - Data type:', typeof data.data);
+            console.log('Dashboard - Data length:', data.data?.length);
+            console.log('Dashboard - First document:', data.data?.[0]);
+            setRecentDocuments(data.data || []);
           } else {
             console.log('Dashboard - API error:', data.message);
             setError(data.message || 'Failed to fetch recent documents');
@@ -87,7 +90,15 @@ export default function Dashboard() {
         } else {
           const errorData = await response.json().catch(() => ({}));
           console.log('Dashboard - HTTP error:', errorData);
-          setError(errorData.message || `HTTP ${response.status}: Failed to fetch recent documents`);
+          
+          // Handle authentication errors specifically
+          if (response.status === 401) {
+            setError('Authentication failed. Please refresh the page or log in again.');
+            // Optionally redirect to login
+            // router.push('/auth/signin');
+          } else {
+            setError(errorData.message || `HTTP ${response.status}: Failed to fetch recent documents`);
+          }
         }
       } catch (error) {
         console.error('Dashboard - Error fetching recent documents:', error);
@@ -96,13 +107,15 @@ export default function Dashboard() {
         setLoading(false);
       }
     };
-    console.log('line 99', recentDocuments);
 
     if (status === 'authenticated') {
       console.log('Dashboard - User authenticated, fetching documents...');
+      console.log('Dashboard - Session user:', session?.user);
+      console.log('Dashboard - Session user ID:', session?.user?.id);
       fetchRecentDocuments();
     } else {
       console.log('Dashboard - User not authenticated, status:', status);
+      console.log('Dashboard - Session:', session);
     }
   }, [status]);
 
@@ -116,6 +129,15 @@ export default function Dashboard() {
       </div>
     )
   }
+
+  // Temporary debug log
+  console.log('Dashboard - Current state:', { 
+    status, 
+    loading, 
+    error, 
+    recentDocumentsLength: recentDocuments.length,
+    recentDocuments 
+  });
 
 
   const stats = [
@@ -271,22 +293,58 @@ export default function Dashboard() {
                 ) : error ? (
                   <div className="text-center py-4 text-danger">
                     <small>{error}</small>
+                    {error.includes('Authentication failed') && (
+                      <div className="mt-2">
+                        <button 
+                          className="btn btn-sm btn-outline-primary"
+                          onClick={() => window.location.reload()}
+                        >
+                          Refresh Page
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : recentDocuments.length === 0 ? (
                   <div className="text-center py-4 text-muted">
-                    <small>No recent documents found.</small>
+                    <small>No recent documents found. Create your first policy to get started!</small>
+                    <div className="mt-3">
+                      <button 
+                        className="btn btn-sm btn-primary"
+                        onClick={() => router.push('/new_policy')}
+                      >
+                        <Plus size={16} className="me-1" />
+                        Create First Policy
+                      </button>
+                    </div>
+                    {/* Temporary debug info */}
+                    <div className="mt-3 p-3 bg-light">
+                      <small className="text-muted">
+                        Debug Info:<br/>
+                        Loading: {loading.toString()}<br/>
+                        Error: {error || 'none'}<br/>
+                        Documents Count: {recentDocuments.length}<br/>
+                        Raw Data: {JSON.stringify(recentDocuments.slice(0, 2))}
+                      </small>
+                    </div>
                   </div>
                 ) : (
-                  recentDocuments.map((doc, index) => (
-                    <RecentDocumentItem
-                      key={doc._id}
-                      id={doc._id}
-                      title={doc.title}
-                      author={`${doc.created_by?.first_name} ${doc.created_by?.last_name}`}
-                      time={new Date(doc.created_at).toLocaleDateString()}
-                      views={doc.views || 0}
-                    />
-                  ))
+                  (() => {
+                    console.log('Dashboard - Rendering documents, count:', recentDocuments.length);
+                    console.log('Dashboard - Documents to render:', recentDocuments);
+                    return recentDocuments.map((doc, index) => {
+                      console.log('Dashboard - Rendering document:', doc);
+                      return (
+                        <RecentDocumentItem
+                          key={doc._id}
+                          id={doc._id}
+                          title={doc.title}
+                          author={`${doc.created_by?.first_name} ${doc.created_by?.last_name}`}
+                          time={new Date(doc.createdAt).toLocaleDateString()}
+                          views={doc.views || 0}
+                        />
+                      );
+                    });
+                  })()
                 )}
               </div>
             </div>
@@ -296,8 +354,7 @@ export default function Dashboard() {
           <div className="col-md-5 mb-4">
             <div className="card border-0 shadow-sm">
               <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                <h5 className="mb-0">Popular This Week</h5>
-                <button className="btn btn-link text-decoration-none p-0">View All</button>
+                <h5 className="mb-0">Pinned Documents</h5>
               </div>
               <div className="card-body p-0">
                 {popularDocuments.map((doc, index) => (

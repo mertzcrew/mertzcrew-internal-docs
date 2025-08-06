@@ -12,7 +12,11 @@ export async function POST(request) {
 
     // Get session to identify the user
     const session = await getServerSession(authOptions);
+    console.log('API - Session check:', !!session);
+    console.log('API - Session user:', session?.user);
+    
     if (!session) {
+      console.log('API - No session found, returning 401');
       return NextResponse.json(
         { success: false, message: 'Authentication required' },
         { status: 401 }
@@ -226,9 +230,69 @@ export async function POST(request) {
 }
 
 // GET route to fetch all policies (optional)
-export async function GET() {
+export async function GET(request) {
   try {
     await dbConnect();
+    
+    // Debug environment variables
+    console.log('API - NEXTAUTH_SECRET exists:', !!process.env.NEXTAUTH_SECRET);
+    console.log('API - NEXTAUTH_SECRET length:', process.env.NEXTAUTH_SECRET?.length);
+    
+    // Get query parameters
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status');
+    const limit = parseInt(searchParams.get('limit')) || 0;
+    const sort = searchParams.get('sort') || 'created_at:desc';
+    
+    console.log('API - Query params:', { status, limit, sort });
+    
+    // Temporary test endpoint to check database without auth
+    const test = searchParams.get('test');
+    if (test === 'true') {
+      try {
+        const allPolicies = await Policy.find({});
+        const activePolicies = await Policy.find({ status: 'active' });
+        console.log('API - Test: All policies count:', allPolicies.length);
+        console.log('API - Test: Active policies count:', activePolicies.length);
+        return NextResponse.json({
+          success: true,
+          allCount: allPolicies.length,
+          activeCount: activePolicies.length,
+          activePolicies: activePolicies.map(p => ({ id: p._id, title: p.title, status: p.status }))
+        });
+      } catch (dbError) {
+        console.error('API - Database error in test:', dbError);
+        return NextResponse.json({
+          success: false,
+          message: 'Database connection error',
+          error: dbError.message
+        });
+      }
+    }
+    
+    // Temporary bypass for dashboard recent documents (unauthenticated)
+    const dashboard = searchParams.get('dashboard');
+    if (dashboard === 'true') {
+      try {
+        const activePolicies = await Policy.find({ status: 'active' })
+          .populate('created_by', 'first_name last_name email')
+          .sort({ created_at: -1 })
+          .limit(4);
+        
+        console.log('API - Dashboard: Active policies count:', activePolicies.length);
+        return NextResponse.json({
+          success: true,
+          data: activePolicies
+        });
+      } catch (dbError) {
+        console.error('API - Dashboard error:', dbError);
+        return NextResponse.json({
+          success: false,
+          message: 'Database connection error',
+          error: dbError.message
+        });
+      }
+    }
     
     // Get session to identify the user
     const session = await getServerSession(authOptions);
@@ -250,10 +314,18 @@ export async function GET() {
 
     let policiesQuery = Policy.find({});
 
-    // If user is admin, they can see all policies
-    if (user.role === 'admin') {
+    // Apply status filter if provided
+    if (status) {
+      policiesQuery = policiesQuery.where('status', status);
+    }
+
+    // If user is admin, they can see all policies (unless status filter is applied)
+    if (user.role === 'admin' && !status) {
       console.log('Admin user - showing all policies');
       policiesQuery = Policy.find({});
+      if (status) {
+        policiesQuery = policiesQuery.where('status', status);
+      }
     } else {
       console.log('Non-admin user - filtering policies');
       console.log('User ID:', user._id);
@@ -269,17 +341,43 @@ export async function GET() {
           }
         ]
       });
+      
+      // Apply status filter if provided (for non-admin users)
+      if (status) {
+        if (status === 'active') {
+          policiesQuery = Policy.find({ status: 'active' });
+        } else if (status === 'draft') {
+          policiesQuery = Policy.find({ 
+            status: 'draft',
+            assigned_users: user._id 
+          });
+        }
+      }
+    }
+
+    // Apply sorting
+    const [sortField, sortOrder] = sort.split(':');
+    const sortObject = {};
+    sortObject[sortField] = sortOrder === 'desc' ? -1 : 1;
+    policiesQuery = policiesQuery.sort(sortObject);
+
+    // Apply limit if provided
+    if (limit > 0) {
+      policiesQuery = policiesQuery.limit(limit);
     }
 
     const policies = await policiesQuery
       .populate('created_by', 'first_name last_name email')
       .populate('updated_by', 'first_name last_name email')
-      .populate('assigned_users', 'first_name last_name email')
-      .sort({ created_at: -1 });
+      .populate('assigned_users', 'first_name last_name email');
 
     console.log('Policies found:', policies.length);
+    console.log('API - All policies in database:', await Policy.countDocuments());
+    console.log('API - Active policies in database:', await Policy.countDocuments({ status: 'active' }));
+    console.log('API - Draft policies in database:', await Policy.countDocuments({ status: 'draft' }));
+    
     policies.forEach(policy => {
-      console.log(`Policy: ${policy.title}, Status: ${policy.status}, Assigned Users:`, policy.assigned_users?.map(u => u._id));
+      console.log(`Policy: ${policy.title}, Status: ${policy.status}, Created: ${policy.created_at}`);
     });
 
     return NextResponse.json(

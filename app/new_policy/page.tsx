@@ -216,17 +216,32 @@ export default function NewPolicyPage() {
         const result = await response.json();
 
         if (response.ok) {
+          console.log('Policy creation - API response:', result);
+          console.log('Policy creation - Policy ID:', result.data?._id);
+          
           const successMessage = form.isDraft 
             ? 'Policy created as draft successfully!' 
             : 'Policy created and published successfully!';
           setSubmitMessage({ type: 'success', text: successMessage });
+          
+          // Get the created policy ID from the response
+          const policyId = result.data?._id;
+          
           // Reset form after successful submission
           setTimeout(() => {
             setForm(initialForm);
             setSelectedUsers([]);
             setSubmitMessage(null);
-            // Optionally redirect to dashboard or policy list
-            router.push('/dashboard');
+            
+            // Navigate to the newly created policy's detail page
+            if (policyId) {
+              console.log('Policy creation - Navigating to policy:', policyId);
+              router.push(`/policy/${policyId}`);
+            } else {
+              console.log('Policy creation - No policy ID found, falling back to dashboard');
+              // Fallback to dashboard if policy ID is not available
+              router.push('/dashboard');
+            }
           }, 2000);
         } else {
           setSubmitMessage({ 
