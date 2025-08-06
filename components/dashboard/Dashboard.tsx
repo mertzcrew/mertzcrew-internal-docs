@@ -313,7 +313,7 @@ export default function Dashboard() {
         {/* Content Sections */}
         <div className="row">
           {/* Recent Documents */}
-          <div className="col-md-7 mb-4">
+          <div className="col-md-6 mb-4">
             <div className="card border-0 shadow-sm">
               <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                 <h5 className="mb-0">Recent Documents</h5>
@@ -376,7 +376,7 @@ export default function Dashboard() {
           </div>
 
           {/* Pinned Documents */}
-          <div className="col-md-5 mb-4">
+          <div className="col-md-6 mb-4">
             <div className="card border-0 shadow-sm">
               <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                 <h5 className="mb-0">
