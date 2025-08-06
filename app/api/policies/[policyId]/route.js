@@ -4,7 +4,7 @@ import { authOptions } from '../../auth/[...nextauth]/route';
 import dbConnect from '../../../../components/lib/mongodb';
 import Policy from '../../../../models/Policy';
 import User from '../../../../models/User';
-import UserPinnedPolicy from '../../../../models/UserPinnedPolicy';
+import UserPinnedPolicy from '../../../../models/UserPinnedPolicy.js';
 
 // GET a single policy by ID
 export async function GET(request, { params }) {
@@ -38,12 +38,12 @@ export async function GET(request, { params }) {
     if (action === 'checkPin') {
       try {
         const userPinnedPolicies = await UserPinnedPolicy.findOne({ userId: user._id });
-        const isPinned = userPinnedPolicies ? 
-          userPinnedPolicies.pinnedPolicies.some(policy => policy.toString() === policyId) : false;
+        const isPinned = userPinnedPolicies && userPinnedPolicies.pinnedPolicies ? 
+          userPinnedPolicies.pinnedPolicies.some(item => item && item.policyId && item.policyId.toString() === policyId) : false;
         
         console.log('GET Check pin status - User ID:', user._id);
         console.log('GET Check pin status - Policy ID:', policyId);
-        console.log('GET Check pin status - User pinned policies:', userPinnedPolicies?.pinnedPolicies?.map(p => p.toString()));
+        console.log('GET Check pin status - User pinned policies:', userPinnedPolicies?.pinnedPolicies?.map(p => p?.policyId?.toString()).filter(Boolean));
         console.log('GET Check pin status - Is pinned:', isPinned);
         
         return NextResponse.json({
@@ -233,27 +233,30 @@ export async function PATCH(request, { params }) {
           });
         }
 
-        const isPinned = userPinnedPolicies.pinnedPolicies.some(policy => policy.toString() === policyId);
+        const isPinned = userPinnedPolicies.pinnedPolicies.some(item => item && item.policyId && item.policyId.toString() === policyId);
         
         console.log('Toggle pin - User ID:', user._id);
         console.log('Toggle pin - Policy ID:', policyId);
-        console.log('Toggle pin - Current pinned policies:', userPinnedPolicies.pinnedPolicies.map(p => p.toString()));
+        console.log('Toggle pin - Current pinned policies:', userPinnedPolicies.pinnedPolicies.map(p => p?.policyId?.toString() || p?.toString()).filter(Boolean));
         console.log('Toggle pin - Is currently pinned:', isPinned);
         
         if (isPinned) {
           // Unpin the policy
           userPinnedPolicies.pinnedPolicies = userPinnedPolicies.pinnedPolicies.filter(
-            id => id.toString() !== policyId
+            item => item && (item.policyId ? item.policyId.toString() : item.toString()) !== policyId
           );
           console.log('Toggle pin - Unpinning policy');
         } else {
           // Pin the policy
-          userPinnedPolicies.pinnedPolicies.push(policyId);
+          userPinnedPolicies.pinnedPolicies.push({
+            policyId: policyId,
+            pinnedAt: new Date()
+          });
           console.log('Toggle pin - Pinning policy');
         }
 
         await userPinnedPolicies.save();
-        console.log('Toggle pin - Updated pinned policies:', userPinnedPolicies.pinnedPolicies.map(p => p.toString()));
+        console.log('Toggle pin - Updated pinned policies:', userPinnedPolicies.pinnedPolicies.map(p => p?.policyId?.toString() || p?.toString()).filter(Boolean));
 
         return NextResponse.json({
           success: true,

@@ -51,8 +51,12 @@ interface Policy {
 export default function Dashboard() {
   const [activeNav, setActiveNav] = useState("dashboard")
   const [recentDocuments, setRecentDocuments] = useState<Policy[]>([])
+  const [pinnedDocuments, setPinnedDocuments] = useState<Policy[]>([])
+  const [totalPinnedCount, setTotalPinnedCount] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [pinnedLoading, setPinnedLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [pinnedError, setPinnedError] = useState<string | null>(null)
   const { data: session, status } = useSession()
   const router = useRouter();
 
@@ -108,11 +112,49 @@ export default function Dashboard() {
       }
     };
 
+    const fetchPinnedDocuments = async () => {
+      try {
+        setPinnedError(null);
+        console.log('Dashboard - Fetching pinned documents...');
+        const response = await fetch('/api/policies/pinned?limit=4', {
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Dashboard - Pinned API response:', data);
+          if (data.success) {
+            setPinnedDocuments(data.data || []);
+            // Store the total count to determine if "View All" should be shown
+            setTotalPinnedCount(data.totalCount || 0);
+          } else {
+            setPinnedError(data.message || 'Failed to fetch pinned documents');
+          }
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          if (response.status === 401) {
+            setPinnedError('Authentication failed for pinned documents.');
+          } else {
+            setPinnedError(errorData.message || `HTTP ${response.status}: Failed to fetch pinned documents`);
+          }
+        }
+      } catch (error) {
+        console.error('Dashboard - Error fetching pinned documents:', error);
+        setPinnedError('Network error: Failed to fetch pinned documents');
+      } finally {
+        setPinnedLoading(false);
+      }
+    };
+
     if (status === 'authenticated') {
       console.log('Dashboard - User authenticated, fetching documents...');
       console.log('Dashboard - Session user:', session?.user);
       console.log('Dashboard - Session user ID:', session?.user?.id);
       fetchRecentDocuments();
+      fetchPinnedDocuments();
     } else {
       console.log('Dashboard - User not authenticated, status:', status);
       console.log('Dashboard - Session:', session);
@@ -316,61 +358,73 @@ export default function Dashboard() {
                         Create First Policy
                       </button>
                     </div>
-                    {/* Temporary debug info */}
-                    <div className="mt-3 p-3 bg-light">
-                      <small className="text-muted">
-                        Debug Info:<br/>
-                        Loading: {loading.toString()}<br/>
-                        Error: {error || 'none'}<br/>
-                        Documents Count: {recentDocuments.length}<br/>
-                        Raw Data: {JSON.stringify(recentDocuments.slice(0, 2))}
-                      </small>
-                    </div>
                   </div>
                 ) : (
-                  (() => {
-                    console.log('Dashboard - Rendering documents, count:', recentDocuments.length);
-                    console.log('Dashboard - Documents to render:', recentDocuments);
-                    return recentDocuments.map((doc, index) => {
-                      console.log('Dashboard - Rendering document:', doc);
-                      return (
-                        <RecentDocumentItem
-                          key={doc._id}
-                          id={doc._id}
-                          title={doc.title}
-                          author={`${doc.created_by?.first_name} ${doc.created_by?.last_name}`}
-                          time={new Date(doc.createdAt).toLocaleDateString()}
-                          views={doc.views || 0}
-                        />
-                      );
-                    });
-                  })()
+                  recentDocuments.map((doc, index) => (
+                    <RecentDocumentItem
+                      key={doc._id}
+                      id={doc._id}
+                      title={doc.title}
+                      author={`${doc.created_by?.first_name} ${doc.created_by?.last_name}`}
+                      time={new Date(doc.createdAt).toLocaleDateString()}
+                      views={doc.views || 0}
+                    />
+                  ))
                 )}
               </div>
             </div>
           </div>
 
-          {/* Popular This Week */}
+          {/* Pinned Documents */}
           <div className="col-md-5 mb-4">
             <div className="card border-0 shadow-sm">
               <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                <h5 className="mb-0">Pinned Documents</h5>
-                <button className="btn btn-link text-decoration-none p-0">View All</button>
+                <h5 className="mb-0">
+                  <Star size={16} className="me-2 text-warning" />
+                  Pinned Documents
+                </h5>
+                {totalPinnedCount > 4 && (
+                  <button 
+                    className="btn btn-link text-decoration-none p-0"
+                    onClick={() => router.push('/policies/pinned')}
+                  >
+                    View All
+                  </button>
+                )}
               </div>
               <div className="card-body p-0">
-                {popularDocuments.map((doc, index) => (
-                  <PopularDocumentItem
-                    key={index}
-                    rank={doc.rank}
-                    title={doc.title}
-                    views={doc.views}
-                    change={doc.change}
-                  />
-                ))}
+                {pinnedLoading ? (
+                  <div className="text-center py-4">
+                    <div className="spinner-border spinner-border-sm me-2" role="status">
+                      <span className="visually-hidden">Loading...</span>
+                    </div>
+                    Loading pinned documents...
+                  </div>
+                ) : pinnedError ? (
+                  <div className="text-center py-4 text-danger">
+                    <small>{pinnedError}</small>
+                  </div>
+                ) : pinnedDocuments.length === 0 ? (
+                  <div className="text-center py-4 text-muted">
+                    <small>No pinned documents yet. Pin policies you want to access quickly!</small>
+                  </div>
+                ) : (
+                  pinnedDocuments.map((doc, index) => (
+                    <RecentDocumentItem
+                      key={doc._id}
+                      id={doc._id}
+                      title={doc.title}
+                      author={`${doc.created_by?.first_name} ${doc.created_by?.last_name}`}
+                      time={new Date(doc.createdAt).toLocaleDateString()}
+                      views={doc.views || 0}
+                    />
+                  ))
+                )}
               </div>
             </div>
           </div>
         </div>
+
 
         {/* Quick Actions */}
         <div className="card border-0 shadow-sm">

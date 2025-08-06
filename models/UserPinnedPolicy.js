@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const UserPinnedPolicySchema = new mongoose.Schema({
   userId: {
@@ -8,8 +8,14 @@ const UserPinnedPolicySchema = new mongoose.Schema({
     unique: true
   },
   pinnedPolicies: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Policy'
+    policyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Policy'
+    },
+    pinnedAt: {
+      type: Date,
+      default: Date.now
+    }
   }],
   createdAt: {
     type: Date,
@@ -27,4 +33,4 @@ UserPinnedPolicySchema.pre('save', function(next) {
   next();
 });
 
-module.exports = mongoose.models.UserPinnedPolicy || mongoose.model('UserPinnedPolicy', UserPinnedPolicySchema); 
+export default mongoose.models.UserPinnedPolicy || mongoose.model('UserPinnedPolicy', UserPinnedPolicySchema); 
