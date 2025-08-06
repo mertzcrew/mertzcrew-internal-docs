@@ -29,12 +29,6 @@ export async function GET(request) {
     // Get user's pinned policies
     const userPinnedPolicies = await UserPinnedPolicy.findOne({ userId: user._id })
       .populate('userId');
-      console.log('userPinnedPolicies', userPinnedPolicies)
-    console.log('userPinnedPolicies.pinnedPolicies', userPinnedPolicies?.pinnedPolicies)
-    if (userPinnedPolicies?.pinnedPolicies?.length > 0) {
-      console.log('First pinned policy item:', userPinnedPolicies.pinnedPolicies[0])
-      console.log('First pinned policy keys:', Object.keys(userPinnedPolicies.pinnedPolicies[0]))
-    }
 
     if (!userPinnedPolicies) {
       return NextResponse.json({
@@ -56,7 +50,6 @@ export async function GET(request) {
     if (limit > 0) {
       pinnedPolicies = pinnedPolicies.slice(0, limit);
     }
-console.log('pinnedPolicies', pinnedPolicies)
     
     // Extract the policy IDs from the pinnedPolicies array, handling both formats
     const policyIds = pinnedPolicies.map(item => {
@@ -65,15 +58,10 @@ console.log('pinnedPolicies', pinnedPolicies)
       return id ? id.toString() : null;
     }).filter(Boolean);
     
-    console.log('Policy IDs to fetch:', policyIds);
-    console.log('Policy IDs types:', policyIds.map(id => typeof id));
     
     // Fetch the actual policy documents
     const policies = await Policy.find({ _id: { $in: policyIds } })
       .populate('created_by', 'first_name last_name email');
-    
-    console.log('Found policies:', policies.length);
-    console.log('Policies:', policies);
 
     return NextResponse.json({
       success: true,

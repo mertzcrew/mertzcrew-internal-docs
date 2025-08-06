@@ -162,7 +162,12 @@ const PolicySchema = new mongoose.Schema({
       trim: true,
       maxlength: [500, 'Description cannot be more than 500 characters']
     }
-  }]
+  }],
+  views: {
+    type: Number,
+    default: 0,
+    min: 0
+  }
 }, {
   timestamps: true, // Adds createdAt and updatedAt fields automatically
   toJSON: { virtuals: true },

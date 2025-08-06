@@ -22,6 +22,7 @@ import {
   User,
   Building2,
   LogOut,
+  Pin,
 } from "lucide-react"
 import Header from "../layout/Header"
 import Button from './ui/Button';
@@ -69,31 +70,22 @@ export default function Dashboard() {
     const fetchRecentDocuments = async () => {
       try {
         setError(null);
-        console.log('Dashboard - Fetching recent documents...');
         const response = await fetch(`/api/policies?dashboard=true&_t=${Date.now()}`, {
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
           },
         });
-        console.log('Dashboard - Response status:', response.status);
         
         if (response.ok) {
           const data = await response.json();
-          console.log('Dashboard - API response:', data);
           if (data.success) {
-            console.log('Dashboard - Setting recent documents:', data.data);
-            console.log('Dashboard - Data type:', typeof data.data);
-            console.log('Dashboard - Data length:', data.data?.length);
-            console.log('Dashboard - First document:', data.data?.[0]);
             setRecentDocuments(data.data || []);
           } else {
-            console.log('Dashboard - API error:', data.message);
             setError(data.message || 'Failed to fetch recent documents');
           }
         } else {
           const errorData = await response.json().catch(() => ({}));
-          console.log('Dashboard - HTTP error:', errorData);
           
           // Handle authentication errors specifically
           if (response.status === 401) {
@@ -115,7 +107,6 @@ export default function Dashboard() {
     const fetchPinnedDocuments = async () => {
       try {
         setPinnedError(null);
-        console.log('Dashboard - Fetching pinned documents...');
         const response = await fetch('/api/policies/pinned?limit=4', {
           credentials: 'include',
           headers: {
@@ -125,7 +116,6 @@ export default function Dashboard() {
         
         if (response.ok) {
           const data = await response.json();
-          console.log('Dashboard - Pinned API response:', data);
           if (data.success) {
             setPinnedDocuments(data.data || []);
             // Store the total count to determine if "View All" should be shown
@@ -150,14 +140,8 @@ export default function Dashboard() {
     };
 
     if (status === 'authenticated') {
-      console.log('Dashboard - User authenticated, fetching documents...');
-      console.log('Dashboard - Session user:', session?.user);
-      console.log('Dashboard - Session user ID:', session?.user?.id);
       fetchRecentDocuments();
       fetchPinnedDocuments();
-    } else {
-      console.log('Dashboard - User not authenticated, status:', status);
-      console.log('Dashboard - Session:', session);
     }
   }, [status]);
 
@@ -172,14 +156,7 @@ export default function Dashboard() {
     )
   }
 
-  // Temporary debug log
-  console.log('Dashboard - Current state:', { 
-    status, 
-    loading, 
-    error, 
-    recentDocumentsLength: recentDocuments.length,
-    recentDocuments 
-  });
+
 
 
   const stats = [
@@ -380,8 +357,8 @@ export default function Dashboard() {
             <div className="card border-0 shadow-sm">
               <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                 <h5 className="mb-0">
-                  <Star size={16} className="me-2 text-warning" />
-                  Pinned Documents
+                  <Pin size={20} className="me-2 text-warning" />
+                  My Pinned Documents
                 </h5>
                 {totalPinnedCount > 4 && (
                   <button 

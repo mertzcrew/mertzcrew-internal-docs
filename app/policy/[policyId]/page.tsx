@@ -82,6 +82,7 @@ export default function PolicyDetailPage() {
   const [isPinning, setIsPinning] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [hasTrackedView, setHasTrackedView] = useState(false);
   const { data: session } = useSession();
   const router = useRouter();
   const params = useParams();
@@ -96,17 +97,36 @@ export default function PolicyDetailPage() {
     if (session?.user?.id && policy) {
       checkPinStatus();
     }
-  }, [session, policy]);
+  }, [session, policyId]);
+
+  // Track view count only once when policy is loaded and is active
+  useEffect(() => {
+    const trackView = async () => {
+      if (policy && policy.status === 'active' && !hasTrackedView) {
+        try {
+          setHasTrackedView(true);
+          await fetch(`/api/policies/${policyId}/track-view`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+        } catch (error) {
+          console.error('Error tracking view:', error);
+        }
+      }
+    };
+
+    trackView();
+  }, [policy, policyId, hasTrackedView]); // Run when policy is loaded
 
   const fetchPolicy = async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/policies/${policyId}`);
       const result = await response.json();
-      console.log('API Response:', result);
       if (response.ok) {
-        console.log('Policy data:', result.data);
-        console.log('Policy status:', result.data?.status);
         setPolicy(result.data);
       } else {
         setError(result.message || "Failed to fetch policy");
@@ -121,13 +141,10 @@ export default function PolicyDetailPage() {
 
   const checkPinStatus = async () => {
     if (!session?.user?.id) {
-      console.log('checkPinStatus: No session available, skipping pin check');
       return;
     }
     
     try {
-      console.log('checkPinStatus: Checking pin status for policy:', policyId);
-      console.log('checkPinStatus: Session user ID:', session.user.id);
       const response = await fetch(`/api/policies/${policyId}?action=checkPin`, {
         credentials: 'include',
         headers: {
@@ -136,12 +153,9 @@ export default function PolicyDetailPage() {
       });
       if (response.ok) {
         const result = await response.json();
-        console.log('checkPinStatus: API response:', result);
         setIsPinned(result.isPinned || false);
       } else {
         console.error('checkPinStatus: API error:', response.status);
-        const errorData = await response.json().catch(() => ({}));
-        console.error('checkPinStatus: API error data:', errorData);
       }
     } catch (error) {
       console.error('Error checking pin status:', error);
@@ -151,7 +165,6 @@ export default function PolicyDetailPage() {
   const handleTogglePin = async () => {
     if (!session?.user?.id) return;
     
-    console.log('handleTogglePin: Current pin status:', isPinned);
     setIsPinning(true);
     try {
       const response = await fetch(`/api/policies/${policyId}`, {
@@ -165,9 +178,7 @@ export default function PolicyDetailPage() {
       });
 
       const result = await response.json();
-      console.log('handleTogglePin: API response:', result);
       if (response.ok) {
-        console.log('handleTogglePin: Setting pin status to:', result.isPinned);
         setIsPinned(result.isPinned);
         setSubmitMessage({ 
           type: 'success', 
@@ -310,10 +321,7 @@ export default function PolicyDetailPage() {
     );
   }
 
-  console.log('Rendering policy with attachments:', policy.attachments);
-  console.log('Attachments length:', policy.attachments?.length);
-  console.log('Current pin status:', isPinned);
-  console.log('Session available:', !!session?.user?.id);
+
 
   return (
     <div className="container py-5">
