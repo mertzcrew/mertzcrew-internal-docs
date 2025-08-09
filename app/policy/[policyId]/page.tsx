@@ -519,9 +519,9 @@ export default function PolicyDetailPage() {
               {policy.assigned_users && policy.assigned_users.length > 0 && (
                 <div className="mb-3">
                   <strong>Assigned Users:</strong>
-                  <div className="mt-2">
+                  <div className="mt-2 d-flex flex-wrap gap-2">
                     {policy.assigned_users.map((user, idx) => (
-                      <div key={user._id} className="d-flex align-items-center mb-2">
+                      <div key={user._id} className="d-flex align-items-center">
                         <span className="badge bg-info me-2">
                           {user.first_name} {user.last_name}
                         </span>
