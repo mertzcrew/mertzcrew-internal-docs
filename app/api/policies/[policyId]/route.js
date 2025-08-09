@@ -38,6 +38,29 @@ export async function GET(request, { params }) {
     
     if (action === 'checkPin') {
       try {
+        // First check if user can view this policy
+        const policy = await Policy.findById(policyId)
+          .populate('assigned_users', 'first_name last_name email');
+        
+        if (!policy) {
+          return NextResponse.json({ success: false, message: 'Policy not found' }, { status: 404 });
+        }
+
+        // Check visibility permissions (same logic as main GET)
+        const canView = 
+          user.role === 'admin' || 
+          policy.status === 'active' || 
+          policy.assigned_users.some(assignedUser => assignedUser._id.toString() === user._id.toString());
+
+        if (!canView) {
+          // If user can't view the policy, they shouldn't see it as pinned
+          return NextResponse.json({
+            success: true,
+            isPinned: false
+          });
+        }
+
+        // If user can view the policy, check if it's actually pinned
         const userPinnedPolicies = await UserPinnedPolicy.findOne({ userId: user._id });
         const isPinned = userPinnedPolicies && userPinnedPolicies.pinnedPolicies ? 
           userPinnedPolicies.pinnedPolicies.some(item => item && item.policyId && item.policyId.toString() === policyId) : false;
