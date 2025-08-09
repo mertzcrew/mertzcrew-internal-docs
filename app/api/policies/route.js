@@ -82,10 +82,14 @@ export async function POST(request) {
     }
 
     // Check if user has permission to create policies
-    const hasCreatePermission = user.permissions?.includes('create_policy') || user.role === 'admin';
-    if (!hasCreatePermission) {
+    // All authenticated users can create draft policies, only admins can publish directly
+    const canCreateDraft = true; // All users can create drafts
+    const canPublishDirectly = user.permissions?.includes('create_policy') || user.role === 'admin';
+    
+    // If user is trying to publish directly but doesn't have permission, block it
+    if (!isDraft && !canPublishDirectly) {
       return NextResponse.json(
-        { success: false, message: 'Insufficient permissions to create policies' },
+        { success: false, message: 'Insufficient permissions to publish policies directly. You can create a draft policy for admin review.' },
         { status: 403 }
       );
     }
@@ -172,6 +176,16 @@ export async function POST(request) {
           await Notification.createPolicyNotification(policy._id, 'policy_created');
         } catch (notificationError) {
           console.error('Error creating notifications:', notificationError);
+          // Don't fail the policy creation if notifications fail
+        }
+      }
+      
+      // Create assignment notifications for assigned users (regardless of policy status)
+      if (assignedUsersArray && assignedUsersArray.length > 0) {
+        try {
+          await Notification.createAssignmentNotifications(policy._id, assignedUsersArray, user._id);
+        } catch (notificationError) {
+          console.error('Error creating assignment notifications:', notificationError);
           // Don't fail the policy creation if notifications fail
         }
       }

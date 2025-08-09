@@ -116,12 +116,77 @@ export default function NotificationsPage() {
     }
   };
 
+  // Delete notification
+  const deleteNotification = async (notificationId: string) => {
+    try {
+      console.log('Deleting notification:', notificationId);
+      const response = await fetch('/api/notifications', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ notificationId }),
+      });
+
+      const result = await response.json();
+      console.log('Delete response:', result);
+
+      if (response.ok) {
+        // Remove from local state
+        setNotifications(prev => prev.filter(notif => notif._id !== notificationId));
+        // Update unread count if the deleted notification was unread
+        const deletedNotification = notifications.find(n => n._id === notificationId);
+        if (deletedNotification && !deletedNotification.is_read) {
+          setUnreadCount(prev => Math.max(0, prev - 1));
+        }
+      } else {
+        console.error('Failed to delete notification:', result.message);
+        alert('Failed to delete notification: ' + result.message);
+      }
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      alert('Error deleting notification. Please try again.');
+    }
+  };
+
+  // Delete all notifications
+  const deleteAllNotifications = async () => {
+    if (!confirm('Are you sure you want to delete all notifications? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/notifications', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ deleteAll: true }),
+      });
+
+      if (response.ok) {
+        setNotifications([]);
+        setUnreadCount(0);
+        setCurrentPage(1);
+        setTotalPages(1);
+      }
+    } catch (error) {
+      console.error('Error deleting all notifications:', error);
+    }
+  };
+
   // Handle notification click
   const handleNotificationClick = (notification: Notification) => {
     if (!notification.is_read) {
       markAsRead(notification._id);
     }
     router.push(`/policy/${notification.policy_id._id}`);
+  };
+
+  // Handle delete notification (prevent navigation)
+  const handleDeleteNotification = (notificationId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    deleteNotification(notificationId);
   };
 
   // Handle page change
@@ -187,6 +252,14 @@ export default function NotificationsPage() {
                   Mark all as read ({unreadCount})
                 </button>
               )}
+              {notifications.length > 0 && (
+                <button
+                  className="btn btn-outline-danger"
+                  onClick={deleteAllNotifications}
+                >
+                  Delete all
+                </button>
+              )}
             </div>
           </div>
 
@@ -244,6 +317,15 @@ export default function NotificationsPage() {
                     <div className="d-flex w-100 justify-content-between align-items-start">
                       <div className="flex-grow-1">
                         <div className="d-flex align-items-center mb-1">
+                          <div className="me-2">
+                            {notification.type === 'policy_assigned' ? (
+                              <i className="bi bi-person-plus-fill text-success"></i>
+                            ) : notification.type === 'policy_created' ? (
+                              <i className="bi bi-file-plus-fill text-primary"></i>
+                            ) : (
+                              <i className="bi bi-bell-fill text-info"></i>
+                            )}
+                          </div>
                           <h6 className={`mb-0 ${!notification.is_read ? 'fw-bold' : ''}`}>
                             {notification.title}
                           </h6>
@@ -264,7 +346,14 @@ export default function NotificationsPage() {
                           <span>{formatDate(notification.created_at)}</span>
                         </div>
                       </div>
-                      <div className="text-end">
+                      <div className="text-end d-flex align-items-center gap-2">
+                        <button
+                          className="btn btn-sm btn-link text-danger p-1"
+                          onClick={(e) => handleDeleteNotification(notification._id, e)}
+                          title="Delete notification"
+                        >
+                          <i className="bi bi-trash"></i>
+                        </button>
                         <i className="bi bi-chevron-right text-muted"></i>
                       </div>
                     </div>

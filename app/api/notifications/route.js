@@ -133,4 +133,87 @@ export async function PATCH(request) {
       { status: 500 }
     );
   }
+}
+
+// DELETE /api/notifications - Delete notifications
+export async function DELETE(request) {
+  try {
+    await dbConnect();
+
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json(
+        { success: false, message: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Find the user by email
+    const user = await User.findOne({ email: session.user.email });
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    const body = await request.json();
+    const { notificationId, deleteAll } = body;
+
+    console.log('DELETE notification request:', { notificationId, deleteAll, userId: user._id });
+
+    if (deleteAll) {
+      // Delete all notifications for the user using direct MongoDB operation
+      const result = await Notification.deleteMany({ user_id: user._id });
+      return NextResponse.json({
+        success: true,
+        message: `Deleted ${result.deletedCount} notifications`,
+        deletedCount: result.deletedCount
+      }, { status: 200 });
+    } else if (notificationId) {
+      // First check if the notification exists and belongs to the user
+      const existingNotification = await Notification.findOne({ _id: notificationId, user_id: user._id });
+      console.log('Existing notification:', existingNotification);
+      
+      if (!existingNotification) {
+        console.log('Notification not found or does not belong to user');
+        return NextResponse.json(
+          { success: false, message: 'Notification not found or access denied' },
+          { status: 404 }
+        );
+      }
+
+      // Delete specific notification using direct MongoDB operation
+      console.log('Attempting to delete notification:', { notificationId, userId: user._id });
+      
+      const deletedNotification = await Notification.findOneAndDelete({ 
+        _id: notificationId, 
+        user_id: user._id 
+      });
+      console.log('Deleted notification result:', deletedNotification);
+      
+      if (!deletedNotification) {
+        return NextResponse.json(
+          { success: false, message: 'Failed to delete notification' },
+          { status: 500 }
+        );
+      }
+      return NextResponse.json({
+        success: true,
+        message: 'Notification deleted successfully'
+      }, { status: 200 });
+    } else {
+      return NextResponse.json(
+        { success: false, message: 'notificationId or deleteAll is required' },
+        { status: 400 }
+      );
+    }
+
+  } catch (error) {
+    console.error('Error deleting notifications:', error);
+    return NextResponse.json(
+      { success: false, message: 'Internal server error' },
+      { status: 500 }
+    );
+  }
 } 

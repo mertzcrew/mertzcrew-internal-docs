@@ -101,6 +101,47 @@ NotificationSchema.statics.createPolicyNotification = async function(policyId, t
   }
 };
 
+// Static method to create notifications for assigned users
+NotificationSchema.statics.createAssignmentNotifications = async function(policyId, assignedUserIds, updatedBy) {
+  const Policy = mongoose.model('Policy');
+  const User = mongoose.model('User');
+  
+  const policy = await Policy.findById(policyId)
+    .populate('created_by', 'first_name last_name');
+  
+  if (!policy || !assignedUserIds?.length) return;
+  
+  // Get the users who are being assigned (excluding the creator/updater)
+  const assignedUsers = await User.find({ 
+    _id: { $in: assignedUserIds },
+    isActive: true,
+    _id: { $ne: updatedBy }
+  });
+  
+  if (assignedUsers.length === 0) return;
+  
+  const notifications = [];
+  const notificationTitle = `Assigned to Policy: ${policy.title}`;
+  const notificationMessage = `You have been assigned to policy "${policy.title}" by ${policy.created_by.first_name} ${policy.created_by.last_name}.`;
+  
+  // Create notifications for assigned users
+  for (const user of assignedUsers) {
+    notifications.push({
+      user_id: user._id,
+      policy_id: policy._id,
+      type: 'policy_assigned',
+      title: notificationTitle,
+      message: notificationMessage,
+      is_read: false
+    });
+  }
+  
+  if (notifications.length > 0) {
+    await this.insertMany(notifications);
+    console.log(`Created ${notifications.length} assignment notifications for policy: ${policy.title}`);
+  }
+};
+
 // Static method to mark notification as read
 NotificationSchema.statics.markAsRead = async function(notificationId, userId) {
   return await this.findOneAndUpdate(
@@ -121,6 +162,29 @@ NotificationSchema.statics.markAllAsRead = async function(userId) {
 // Static method to get unread count for user
 NotificationSchema.statics.getUnreadCount = async function(userId) {
   return await this.countDocuments({ user_id: userId, is_read: false });
+};
+
+// Static method to delete a single notification
+NotificationSchema.statics.deleteNotification = async function(notificationId, userId) {
+  // Ensure IDs are properly formatted as ObjectIds
+  const notificationObjectId = mongoose.Types.ObjectId.isValid(notificationId) 
+    ? new mongoose.Types.ObjectId(notificationId) 
+    : notificationId;
+  const userObjectId = mongoose.Types.ObjectId.isValid(userId) 
+    ? new mongoose.Types.ObjectId(userId) 
+    : userId;
+    
+  console.log('Deleting notification with:', { notificationObjectId, userObjectId });
+  
+  return await this.findOneAndDelete({ 
+    _id: notificationObjectId, 
+    user_id: userObjectId 
+  });
+};
+
+// Static method to delete all notifications for a user
+NotificationSchema.statics.deleteAllNotifications = async function(userId) {
+  return await this.deleteMany({ user_id: userId });
 };
 
 const Notification = mongoose.models.Notification || mongoose.model('Notification', NotificationSchema);

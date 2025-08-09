@@ -105,6 +105,40 @@ function NotificationBell() {
     }
   };
 
+  // Delete notification
+  const deleteNotification = async (notificationId: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent navigation when clicking delete
+    try {
+      console.log('Deleting notification:', notificationId);
+      const response = await fetch('/api/notifications', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ notificationId }),
+      });
+
+      const result = await response.json();
+      console.log('Delete response:', result);
+
+      if (response.ok) {
+        // Remove from local state
+        setNotifications(prev => prev.filter(notif => notif._id !== notificationId));
+        // Update unread count if the deleted notification was unread
+        const deletedNotification = notifications.find(n => n._id === notificationId);
+        if (deletedNotification && !deletedNotification.is_read) {
+          setUnreadCount(prev => Math.max(0, prev - 1));
+        }
+      } else {
+        console.error('Failed to delete notification:', result.message);
+        alert('Failed to delete notification: ' + result.message);
+      }
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      alert('Error deleting notification. Please try again.');
+    }
+  };
+
   // Handle notification click
   const handleNotificationClick = (notification: Notification) => {
     if (!notification.is_read) {
@@ -199,8 +233,19 @@ function NotificationBell() {
                 >
                   <div className="d-flex justify-content-between align-items-start">
                     <div className="flex-grow-1">
-                      <div className="fw-semibold text-truncate">
-                        {notification.title}
+                      <div className="d-flex align-items-center mb-1">
+                        <div className="me-2">
+                          {notification.type === 'policy_assigned' ? (
+                            <i className="bi bi-person-plus-fill text-success"></i>
+                          ) : notification.type === 'policy_created' ? (
+                            <i className="bi bi-file-plus-fill text-primary"></i>
+                          ) : (
+                            <i className="bi bi-bell-fill text-info"></i>
+                          )}
+                        </div>
+                        <div className="fw-semibold text-truncate">
+                          {notification.title}
+                        </div>
                       </div>
                       <div className="text-muted small text-truncate">
                         {notification.message}
@@ -212,6 +257,13 @@ function NotificationBell() {
                     {!notification.is_read && (
                       <div className="badge bg-primary rounded-circle" style={{ width: '8px', height: '8px' }}></div>
                     )}
+                    <button
+                      className="btn btn-sm btn-link text-danger p-0 ms-2"
+                      onClick={(e) => deleteNotification(notification._id, e)}
+                      title="Delete notification"
+                    >
+                      <i className="bi bi-trash"></i>
+                    </button>
                   </div>
                 </div>
               ))}

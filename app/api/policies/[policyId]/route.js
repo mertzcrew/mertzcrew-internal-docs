@@ -358,6 +358,12 @@ export async function PATCH(request, { params }) {
     
     // Ensure no duplicates in assigned users
     const uniqueAssignedUsers = [...new Set(assignedUsersArray)];
+    
+    // Determine newly assigned users for notifications
+    const originalAssignedUsers = policy.assigned_users.map(user => user._id.toString());
+    const newAssignedUsers = uniqueAssignedUsers.filter(userId => 
+      !originalAssignedUsers.includes(userId.toString())
+    );
 
     // If policy is published (active), save changes as pending_changes
     if (policy.status === 'active') {
@@ -377,6 +383,16 @@ export async function PATCH(request, { params }) {
       policy.assigned_users = uniqueAssignedUsers;
 
       await policy.save();
+
+      // Create assignment notifications for newly assigned users
+      if (newAssignedUsers.length > 0) {
+        try {
+          await Notification.createAssignmentNotifications(policy._id, newAssignedUsers, user._id);
+        } catch (notificationError) {
+          console.error('Error creating assignment notifications:', notificationError);
+          // Don't fail the policy update if notifications fail
+        }
+      }
 
       const updatedPolicy = await Policy.findById(policyId)
         .populate('created_by', 'first_name last_name email')
@@ -423,6 +439,16 @@ export async function PATCH(request, { params }) {
        
       console.log('Edit API - Updated policy:', updatedPolicy);
       console.log('Edit API - Updated policy attachments:', updatedPolicy.attachments);
+
+      // Create assignment notifications for newly assigned users
+      if (newAssignedUsers.length > 0) {
+        try {
+          await Notification.createAssignmentNotifications(policy._id, newAssignedUsers, user._id);
+        } catch (notificationError) {
+          console.error('Error creating assignment notifications:', notificationError);
+          // Don't fail the policy update if notifications fail
+        }
+      }
 
       return NextResponse.json(
         { 
