@@ -4,6 +4,7 @@ import { authOptions } from '../auth/[...nextauth]/route';
 import dbConnect from '../../../components/lib/mongodb';
 import Policy from '../../../models/Policy';
 import User from '../../../models/User';
+import Notification from '../../../models/Notification';
 
 export async function POST(request) {
   try {
@@ -164,6 +165,17 @@ export async function POST(request) {
       await policy.save();
       console.log('API - Saved policy:', policy);
       console.log('API - Saved policy attachments:', policy.attachments);
+      
+      // Create notifications for published policies
+      if (policy.status === 'active') {
+        try {
+          await Notification.createPolicyNotification(policy._id, 'policy_created');
+        } catch (notificationError) {
+          console.error('Error creating notifications:', notificationError);
+          // Don't fail the policy creation if notifications fail
+        }
+      }
+      
     } catch (saveError) {
       console.error('API - Error saving policy:', saveError);
       if (saveError.name === 'ValidationError') {

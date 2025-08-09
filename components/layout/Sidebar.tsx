@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import Header from './Header';
+import NotificationBell from '../notifications/NotificationBell';
 import { User, Settings, LogOut, Building2 } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -20,36 +21,39 @@ function Sidebar() {
   return (
     <div className="bg-white border-end" style={{ width: "280px", minHeight: "100vh" }}>
       <div className="p-3 border-bottom">
-        <div 
-          className="d-flex align-items-center"
-          onClick={handleBrandClick}
-          style={{ 
-            cursor: status === 'authenticated' ? 'pointer' : 'default',
-            transition: 'opacity 0.2s ease'
-          }}
-          onMouseEnter={(e) => {
-            if (status === 'authenticated') {
-              e.currentTarget.style.opacity = '0.7';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (status === 'authenticated') {
-              e.currentTarget.style.opacity = '1';
-            }
-          }}
-        >
-          <div
-            className="rounded me-2 d-flex align-items-center justify-content-center"
-            style={{
-              width: "32px",
-              height: "32px",
-              backgroundColor: "#ca1f27",
-              color: "white",
+        <div className="d-flex align-items-center justify-content-between">
+          <div 
+            className="d-flex align-items-center"
+            onClick={handleBrandClick}
+            style={{ 
+              cursor: status === 'authenticated' ? 'pointer' : 'default',
+              transition: 'opacity 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              if (status === 'authenticated') {
+                e.currentTarget.style.opacity = '0.7';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (status === 'authenticated') {
+                e.currentTarget.style.opacity = '1';
+              }
             }}
           >
-            <Building2 size={18} />
+            <div
+              className="rounded me-2 d-flex align-items-center justify-content-center"
+              style={{
+                width: "32px",
+                height: "32px",
+                backgroundColor: "#ca1f27",
+                color: "white",
+              }}
+            >
+              <Building2 size={18} />
+            </div>
+            <h5 className="mb-0 fw-bold">Mertz Control Room</h5>
           </div>
-          <h5 className="mb-0 fw-bold">Mertz Control Room</h5>
+          <NotificationBell />
         </div>
       </div>
       <Header activeNav={activeNav} setActiveNav={setActiveNav} />

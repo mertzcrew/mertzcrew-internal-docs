@@ -5,6 +5,7 @@ import dbConnect from '../../../../components/lib/mongodb';
 import Policy from '../../../../models/Policy';
 import User from '../../../../models/User';
 import UserPinnedPolicy from '../../../../models/UserPinnedPolicy.js';
+import Notification from '../../../../models/Notification.js';
 
 // GET a single policy by ID
 export async function GET(request, { params }) {
@@ -186,10 +187,21 @@ export async function PATCH(request, { params }) {
       
       // Always set status to active when publishing
       console.log('Setting status to active');
+      const wasActive = policy.status === 'active';
       policy.status = 'active';
       policy.updated_by = user._id;
       await policy.save();
       console.log('Policy saved with status:', policy.status);
+
+      // Create notifications for newly published policies
+      if (!wasActive) {
+        try {
+          await Notification.createPolicyNotification(policy._id, 'policy_created');
+        } catch (notificationError) {
+          console.error('Error creating notifications:', notificationError);
+          // Don't fail the policy publish if notifications fail
+        }
+      }
 
       const updatedPolicy = await Policy.findById(policyId)
         .populate('created_by', 'first_name last_name email')
