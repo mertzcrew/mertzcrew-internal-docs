@@ -107,7 +107,7 @@ export default function Dashboard() {
     const fetchPinnedDocuments = async () => {
       try {
         setPinnedError(null);
-        const response = await fetch('/api/policies/pinned?limit=4', {
+        const response = await fetch('/api/policies/pinned?limit=5', {
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
@@ -261,10 +261,6 @@ export default function Dashboard() {
                 Your central hub for company resources. Access policies, training materials, HR documentation, and
                 culture guidelines all in one place.
               </p>
-              <div className="d-flex gap-2">
-                <button className="btn btn-light">Create First Document</button>
-                <button className="btn btn-outline-light">Take Tour</button>
-              </div>
             </div>
             <div className="col-md-4 text-end">
               <BookOpen size={120} className="opacity-25" />
@@ -273,7 +269,7 @@ export default function Dashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="row mb-4">
+        {/* <div className="row mb-4">
           {stats.map((stat, index) => (
             <div key={index} className="col-md-3 mb-3">
               <StatCard
@@ -285,7 +281,7 @@ export default function Dashboard() {
               />
             </div>
           ))}
-        </div>
+        </div> */}
 
         {/* Content Sections */}
         <div className="row">
@@ -360,7 +356,7 @@ export default function Dashboard() {
                   <Pin size={20} className="me-2 text-warning" />
                   My Pinned Documents
                 </h5>
-                {totalPinnedCount > 4 && (
+                {totalPinnedCount > 5 && (
                   <button 
                     className="btn btn-link text-decoration-none p-0"
                     onClick={() => router.push('/policies/pinned')}
@@ -404,7 +400,7 @@ export default function Dashboard() {
 
 
         {/* Quick Actions */}
-        <div className="card border-0 shadow-sm">
+        {/* <div className="card border-0 shadow-sm">
           <div className="card-header bg-white border-0">
             <h5 className="mb-1">Quick Actions</h5>
             <small className="text-muted">Common tasks to help you get started</small>
@@ -425,7 +421,7 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   )

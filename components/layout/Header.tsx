@@ -7,7 +7,7 @@ function Header({ activeNav, setActiveNav, isAdmin }: { activeNav: string, setAc
 	const router = useRouter();
 	let sidebarItems = [
 		{ id: "dashboard", label: "Dashboard", icon: Home },
-		{ id: "documents", label: "All Documents", icon: FileText },
+		// { id: "documents", label: "All Documents", icon: FileText },
 		{ id: "policies", label: "All Policies", icon: BookOpen },
 		{ id: "training", label: "Training", icon: Users },
 		{ id: "hr", label: "HR Resources", icon: Building2 },
