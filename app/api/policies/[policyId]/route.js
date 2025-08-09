@@ -6,6 +6,7 @@ import Policy from '../../../../models/Policy';
 import User from '../../../../models/User';
 import UserPinnedPolicy from '../../../../models/UserPinnedPolicy.js';
 import Notification from '../../../../models/Notification.js';
+import DeletedPolicy from '../../../../models/DeletedPolicy.js';
 
 // GET a single policy by ID
 export async function GET(request, { params }) {
@@ -543,8 +544,12 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    // Find the policy
-    const policy = await Policy.findById(policyId);
+    // Find the policy with populated fields
+    const policy = await Policy.findById(policyId)
+      .populate('created_by', 'first_name last_name email')
+      .populate('updated_by', 'first_name last_name email')
+      .populate('assigned_users', 'first_name last_name email');
+      
     if (!policy) {
       return NextResponse.json(
         { success: false, message: 'Policy not found' },
@@ -552,13 +557,46 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    // Delete the policy
+    // Create DeletedPolicy document
+    const deletedPolicyData = {
+      title: policy.title,
+      content: policy.content,
+      description: policy.description,
+      status: policy.status,
+      category: policy.category,
+      pending_changes: policy.pending_changes,
+      version: policy.version,
+      created_by: policy.created_by._id,
+      updated_by: policy.updated_by?._id,
+      effective_date: policy.effective_date,
+      expiry_date: policy.expiry_date,
+      tags: policy.tags,
+      organization: policy.organization,
+      assigned_users: policy.assigned_users.map(user => user._id),
+      attachments: policy.attachments,
+      views: policy.views,
+      deleted_by: user._id,
+      deleted_at: new Date(),
+      original_policy_id: policy._id
+    };
+
+    // Create the deleted policy record
+    const deletedPolicy = new DeletedPolicy(deletedPolicyData);
+    await deletedPolicy.save();
+
+    // Remove from pinned policies for all users
+    await UserPinnedPolicy.updateMany(
+      {},
+      { $pull: { pinnedPolicies: { policyId: policy._id } } }
+    );
+
+    // Delete the original policy
     await Policy.findByIdAndDelete(policyId);
 
     return NextResponse.json(
       { 
         success: true, 
-        message: 'Policy deleted successfully'
+        message: 'Policy deleted successfully and moved to archive'
       },
       { status: 200 }
     );
