@@ -275,117 +275,118 @@ export default function Dashboard() {
 
         {/* Content Sections */}
         <div className="row">
-          {/* Recent Documents */}
-          <div className="col-md-6 mb-4">
-            <div className="card border-0 shadow-sm">
-              <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                <h5 className="mb-0">Recent Documents</h5>
-                <button 
-                  className="btn btn-link text-decoration-none p-0"
-                  onClick={() => router.push('/policies')}
-                >
-                  View All
-                </button>
-              </div>
-              <div className="card-body p-0">
-                {loading ? (
-                  <div className="text-center py-4">
-                    <div className="spinner-border spinner-border-sm me-2" role="status">
-                      <span className="visually-hidden">Loading...</span>
-                    </div>
-                    Loading documents...
-                  </div>
-                ) : error ? (
-                  <div className="text-center py-4 text-danger">
-                    <small>{error}</small>
-                    {error.includes('Authentication failed') && (
-                      <div className="mt-2">
-                        <button 
-                          className="btn btn-sm btn-outline-primary"
-                          onClick={() => window.location.reload()}
-                        >
-                          Refresh Page
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ) : recentDocuments.length === 0 ? (
-                  <div className="text-center py-4 text-muted">
-                    <small>No recent documents found. Create your first policy to get started!</small>
-                    <div className="mt-3">
-                      <button 
-                        className="btn btn-sm btn-primary"
-                        onClick={() => router.push('/new_policy')}
-                      >
-                        <Plus size={16} className="me-1" />
-                        Create First Policy
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  recentDocuments.map((doc, index) => (
-                    <RecentDocumentItem
-                      key={doc._id}
-                      id={doc._id}
-                      title={doc.title}
-                      author={`${doc.created_by?.first_name} ${doc.created_by?.last_name}`}
-                      time={new Date(doc.createdAt).toLocaleDateString()}
-                      views={doc.views || 0}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
+			 {/* Pinned Documents */}
+			 <div className="col-md-6 mb-4">
+				<div className="card border-0 shadow-sm">
+					<div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+					<h5 className="mb-0">
+						<Pin size={20} className="me-2 text-warning" />
+						My Pinned Documents
+					</h5>
+					{totalPinnedCount > 5 && (
+						<button 
+						className="btn btn-link text-decoration-none p-0"
+						onClick={() => router.push('/policies/pinned')}
+						>
+						View All
+						</button>
+					)}
+					</div>
+					<div className="card-body p-0">
+					{pinnedLoading ? (
+						<div className="text-center py-4">
+						<div className="spinner-border spinner-border-sm me-2" role="status">
+							<span className="visually-hidden">Loading...</span>
+						</div>
+						Loading pinned documents...
+						</div>
+					) : pinnedError ? (
+						<div className="text-center py-4 text-danger">
+						<small>{pinnedError}</small>
+						</div>
+					) : pinnedDocuments.length === 0 ? (
+						<div className="text-center py-4 text-muted">
+						<small>No pinned documents yet. Pin policies you want to access quickly!</small>
+						</div>
+					) : (
+						pinnedDocuments.map((doc, index) => (
+						<RecentDocumentItem
+							key={doc._id}
+							id={doc._id}
+							title={doc.title}
+							author={`${doc.created_by?.first_name} ${doc.created_by?.last_name}`}
+							time={new Date(doc.createdAt).toLocaleDateString()}
+							views={doc.views || 0}
+						/>
+						))
+					)}
+					</div>
+				</div>
+			</div>
+			{/* Recent Documents */}
+			<div className="col-md-6 mb-4">
+				<div className="card border-0 shadow-sm">
+				<div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+					<h5 className="mb-0">Recent Documents</h5>
+					<button 
+					className="btn btn-link text-decoration-none p-0"
+					onClick={() => router.push('/policies')}
+					>
+					View All
+					</button>
+				</div>
+				<div className="card-body p-0">
+					{loading ? (
+					<div className="text-center py-4">
+						<div className="spinner-border spinner-border-sm me-2" role="status">
+						<span className="visually-hidden">Loading...</span>
+						</div>
+						Loading documents...
+					</div>
+					) : error ? (
+					<div className="text-center py-4 text-danger">
+						<small>{error}</small>
+						{error.includes('Authentication failed') && (
+						<div className="mt-2">
+							<button 
+							className="btn btn-sm btn-outline-primary"
+							onClick={() => window.location.reload()}
+							>
+							Refresh Page
+							</button>
+						</div>
+						)}
+					</div>
+					) : recentDocuments.length === 0 ? (
+					<div className="text-center py-4 text-muted">
+						<small>No recent documents found. Create your first policy to get started!</small>
+						<div className="mt-3">
+						<button 
+							className="btn btn-sm btn-primary"
+							onClick={() => router.push('/new_policy')}
+						>
+							<Plus size={16} className="me-1" />
+							Create First Policy
+						</button>
+						</div>
+					</div>
+					) : (
+					recentDocuments.map((doc, index) => (
+						<RecentDocumentItem
+						key={doc._id}
+						id={doc._id}
+						title={doc.title}
+						author={`${doc.created_by?.first_name} ${doc.created_by?.last_name}`}
+						time={new Date(doc.createdAt).toLocaleDateString()}
+						views={doc.views || 0}
+						/>
+					))
+					)}
+				</div>
+				</div>
+			</div>
 
-          {/* Pinned Documents */}
-          <div className="col-md-6 mb-4">
-            <div className="card border-0 shadow-sm">
-              <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                <h5 className="mb-0">
-                  <Pin size={20} className="me-2 text-warning" />
-                  My Pinned Documents
-                </h5>
-                {totalPinnedCount > 5 && (
-                  <button 
-                    className="btn btn-link text-decoration-none p-0"
-                    onClick={() => router.push('/policies/pinned')}
-                  >
-                    View All
-                  </button>
-                )}
-              </div>
-              <div className="card-body p-0">
-                {pinnedLoading ? (
-                  <div className="text-center py-4">
-                    <div className="spinner-border spinner-border-sm me-2" role="status">
-                      <span className="visually-hidden">Loading...</span>
-                    </div>
-                    Loading pinned documents...
-                  </div>
-                ) : pinnedError ? (
-                  <div className="text-center py-4 text-danger">
-                    <small>{pinnedError}</small>
-                  </div>
-                ) : pinnedDocuments.length === 0 ? (
-                  <div className="text-center py-4 text-muted">
-                    <small>No pinned documents yet. Pin policies you want to access quickly!</small>
-                  </div>
-                ) : (
-                  pinnedDocuments.map((doc, index) => (
-                    <RecentDocumentItem
-                      key={doc._id}
-                      id={doc._id}
-                      title={doc.title}
-                      author={`${doc.created_by?.first_name} ${doc.created_by?.last_name}`}
-                      time={new Date(doc.createdAt).toLocaleDateString()}
-                      views={doc.views || 0}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
+         
         </div>
 
 
