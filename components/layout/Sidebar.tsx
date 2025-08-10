@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import Header from './Header';
 import NotificationBell from '../notifications/NotificationBell';
+import GlobalSearch from '../search/GlobalSearch';
 import { User, Settings, LogOut, Building2 } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -21,7 +22,7 @@ function Sidebar() {
   return (
     <div className="bg-white border-end" style={{ width: "280px", minHeight: "100vh" }}>
       <div className="p-3 border-bottom">
-        <div className="d-flex align-items-center justify-content-between">
+        <div className="d-flex align-items-center justify-content-between mb-3">
           <div 
             className="d-flex align-items-center"
             onClick={handleBrandClick}
@@ -55,6 +56,7 @@ function Sidebar() {
           </div>
           <NotificationBell />
         </div>
+        <GlobalSearch />
       </div>
       <Header activeNav={activeNav} setActiveNav={setActiveNav} />
       {/* User Profile */}

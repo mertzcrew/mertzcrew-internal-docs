@@ -1,5 +1,5 @@
 "use client";
-import { Home, FileText, BookOpen, Users, Building2, Star, Clock, Tag, Share2, UserPlus, BookOpenText } from 'lucide-react'
+import { Home, FileText, BookOpen, Users, Building2, Star, Clock, Tag, Share2, UserPlus, BookOpenText, Search } from 'lucide-react'
 import React from 'react'
 import { useRouter } from 'next/navigation';
 
@@ -7,6 +7,7 @@ function Header({ activeNav, setActiveNav, isAdmin }: { activeNav: string, setAc
 	const router = useRouter();
 	let sidebarItems = [
 		{ id: "dashboard", label: "Dashboard", icon: Home },
+		{ id: "search", label: "Global Search", icon: Search },
 		// { id: "documents", label: "All Documents", icon: FileText },
 		{ id: "policies", label: "All Policies", icon: BookOpen },
 		{ id: "training", label: "Training", icon: Users },
@@ -35,6 +36,7 @@ function Header({ activeNav, setActiveNav, isAdmin }: { activeNav: string, setAc
 				onClick={() => {
 					setActiveNav(item.id);
 					if (item.id === "dashboard") router.push("/dashboard");
+					if (item.id === "search") router.push("/search");
 					if (item.id === "policies") router.push("/policies");
 					if (item.id === "adduser") router.push("/add-user");
 					if (item.id === "sessiontest") router.push("/session-test");

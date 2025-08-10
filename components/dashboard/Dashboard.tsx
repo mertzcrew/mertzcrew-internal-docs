@@ -29,6 +29,7 @@ import Button from './ui/Button';
 import RecentDocumentItem from './ui/RecentDocumentItem';
 import PopularDocumentItem from './ui/PopularDocumentItem';
 import StatCard from './ui/StatCard';
+import GlobalSearch from '../search/GlobalSearch';
 import { useRouter } from 'next/navigation';
 
 interface Policy {
@@ -224,25 +225,14 @@ export default function Dashboard() {
         <div className="d-flex justify-content-between align-items-center">
           <div className="d-flex align-items-center">
             <h4 className="mb-0 me-3">Dashboard</h4>
-            <span className="badge bg-light text-dark">Demo Mode</span>
           </div>
           <div className="d-flex align-items-center gap-3">
-            <div className="position-relative" style={{ width: "300px" }}>
-              <Search
-                size={16}
-                className="position-absolute text-muted"
-                style={{ left: "12px", top: "50%", transform: "translateY(-50%)" }}
-              />
-              <input
-                type="text"
-                className="form-control ps-5"
-                placeholder="Search documentation..."
-                style={{ backgroundColor: "#f8f9fa", border: "1px solid #dee2e6" }}
-              />
+            <div style={{ width: "300px" }}>
+              <GlobalSearch />
             </div>
-            <button className="btn btn-outline-secondary">
+            {/* <button className="btn btn-outline-secondary">
               <Bell size={16} />
-            </button>
+            </button> */}
             <button className="btn text-white" style={{ backgroundColor: "#ca1f27" }} onClick={() => router.push('/new_policy')}>
               <Plus size={16} className="me-1" />
               New Document
