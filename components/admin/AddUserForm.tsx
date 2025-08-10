@@ -1,6 +1,15 @@
 "use client";
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { 
+    USER_ROLES, 
+    USER_PERMISSIONS, 
+    ORGANIZATIONS, 
+    DEPARTMENTS,
+    validateUser,
+    isValidEmail,
+    isValidPassword
+} from '../../lib/validations';
 
 interface FormData {
   email: string;
@@ -15,17 +24,7 @@ interface FormData {
   phone?: string;
 }
 
-const ROLES = ['admin', 'manager', 'associate'];
-const ORGANIZATIONS = ['mertzcrew', 'mertz_production'];
-const PERMISSIONS = [
-  'create_policy',
-  'edit_policy', 
-  'delete_policy',
-  'view_policy',
-  'manage_users',
-  'view_analytics',
-  'export_data'
-];
+// Constants are now imported from lib/validations.ts
 
 export default function AddUserForm() {
   const router = useRouter();
@@ -110,15 +109,8 @@ export default function AddUserForm() {
   };
 
   const isFormValid = () => {
-    return (
-      formData.email &&
-      formData.password &&
-      formData.first_name &&
-      formData.last_name &&
-      formData.organization &&
-      formData.department &&
-      formData.password.length >= 8
-    );
+    const validation = validateUser(formData);
+    return validation.isValid;
   };
 
   return (
@@ -218,27 +210,31 @@ export default function AddUserForm() {
           >
             <option value="">Select Organization</option>
             {ORGANIZATIONS.map(org => (
-              <option key={org} value={org}>
-                {org.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              <option key={org.value} value={org.value}>
+                {org.display}
               </option>
             ))}
           </select>
         </div>
-
-        <div className="col-md-6 mb-3">
-          <label htmlFor="department" className="form-label">
-            Department <span className="text-danger">*</span>
-          </label>
-          <input
-            type="text"
-            className="form-control"
-            id="department"
-            name="department"
-            value={formData.department}
-            onChange={handleInputChange}
-            required
-            maxLength={100}
-          />
+		<div className="col-md-6 mb-3">
+			<label htmlFor="department" className="form-label">
+			Department <span className="text-danger">*</span>
+			</label>
+			<select
+			className="form-select"
+			id="department"
+			name="department"
+			value={formData.department}
+			onChange={handleInputChange}
+			required
+			>
+			<option value="">Select Department</option>
+			{DEPARTMENTS.map(department => (
+				<option key={department.value} value={department.value}>
+				{department.display}
+				</option>
+			))}
+			</select>
         </div>
       </div>
 
@@ -255,7 +251,7 @@ export default function AddUserForm() {
             onChange={handleInputChange}
             required
           >
-            {ROLES.map(role => (
+            {USER_ROLES.map(role => (
               <option key={role} value={role}>
                 {role.charAt(0).toUpperCase() + role.slice(1)}
               </option>
@@ -279,7 +275,7 @@ export default function AddUserForm() {
         </div>
       </div>
 
-      <div className="row">
+      {/* <div className="row">
         <div className="col-md-6 mb-3">
           <label htmlFor="phone" className="form-label">
             Phone Number
@@ -293,12 +289,12 @@ export default function AddUserForm() {
             onChange={handleInputChange}
           />
         </div>
-      </div>
+      </div> */}
 
       <div className="mb-3">
         <label className="form-label">Permissions</label>
         <div className="row">
-          {PERMISSIONS.map(permission => (
+          {USER_PERMISSIONS.map(permission => (
             <div key={permission} className="col-md-4 mb-2">
               <div className="form-check">
                 <input

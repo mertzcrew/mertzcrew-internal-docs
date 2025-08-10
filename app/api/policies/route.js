@@ -27,19 +27,12 @@ export async function POST(request) {
     // Parse request body
     const body = await request.json();
     console.log('API - Received request body:', body);
-    console.log('API - Body keys:', Object.keys(body));
-    console.log('API - Title:', body.title);
-    console.log('API - Category:', body.category);
-    console.log('API - Organization:', body.organization);
-    console.log('API - Content:', body.content);
-    console.log('API - Description:', body.description);
-    console.log('API - IsDraft:', body.isDraft);
-    console.log('API - Assigned Users:', body.assigned_users);
     
     const { 
       title, 
       content, 
-      description, 
+      description,
+      department,
       category, 
       tags, 
       organization = 'all',
@@ -152,6 +145,7 @@ export async function POST(request) {
       category: category.trim(),
       tags: parsedTags,
       organization,
+      department,
       attachments: processedAttachments,
       assigned_users: assignedUsersArray,
       status: initialStatus,
@@ -222,6 +216,7 @@ export async function POST(request) {
           title: policy.title,
           category: policy.category,
           organization: policy.organization,
+          department: policy.department,
           status: policy.status,
           created_at: policy.created_at
         }

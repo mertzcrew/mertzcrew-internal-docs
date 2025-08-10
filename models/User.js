@@ -70,6 +70,7 @@ const UserSchema = new mongoose.Schema({
   department: {
     type: String,
     trim: true,
+    enum: ['tech_team', 'customer_support', 'misc'],
     maxlength: [100, 'Department cannot be more than 100 characters']
   },
   position: {

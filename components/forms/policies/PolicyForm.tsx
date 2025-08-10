@@ -7,6 +7,7 @@ import "@uiw/react-md-editor/markdown-editor.css";
 import "@uiw/react-markdown-preview/markdown.css";
 import PolicyFileUpload from "../../ui/PolicyFileUpload";
 import UserAssignmentInput from './UserAssignmentInput';
+import { POLICY_ORGANIZATIONS, DEPARTMENTS } from "../../../lib/validations";
 
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
 
@@ -18,7 +19,7 @@ interface PolicyAttachment {
   fileType: string;
   uploadedBy?: string;
   uploadedAt: Date | string;
-  description?: string;
+//   description?: string;
 }
 
 interface User {
@@ -34,7 +35,8 @@ interface PolicyFormProps {
     title: string;
     category: string;
     organization: string;
-    description: string;
+    department?: string;
+    // description: string;
     tags: string;
     body?: string;
     content?: string;
@@ -156,14 +158,34 @@ function PolicyForm({
                     required
                   >
                     <option value="">Select Organization</option>
-                    <option value="all">All Organizations</option>
-                    <option value="mertzcrew">Mertzcrew</option>
-                    <option value="mertz_production">Mertz Production</option>
+                    {POLICY_ORGANIZATIONS.map(org => (
+                      <option key={org.value} value={org.value}>
+                        {org.display}
+                      </option>
+                    ))}
                   </select>
                   {errors.organization && <div className="invalid-feedback">{errors.organization}</div>}
                 </div>
 
                 <div className="mb-3">
+                  <label className="form-label fw-semibold">Department</label>
+                  <select
+                    name="department"
+                    className={`form-select${errors.department ? " is-invalid" : ""}`}
+                    value={form.department || ""}
+                    onChange={handleChange}
+                  >
+                    <option value="">Select Department (Optional)</option>
+                    {DEPARTMENTS.map(dept => (
+                      <option key={dept.value} value={dept.value}>
+                        {dept.display}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.department && <div className="invalid-feedback">{errors.department}</div>}
+                </div>
+
+                {/* <div className="mb-3">
                   <label className="form-label fw-semibold">Description *</label>
                   <input
                     name="description"
@@ -172,7 +194,7 @@ function PolicyForm({
                     onChange={handleChange}
                   />
                   {errors.description && <div className="invalid-feedback">{errors.description}</div>}
-                </div>
+                </div> */}
 
                 <div className="mb-3">
                   <label className="form-label fw-semibold">Tags (comma separated)</label>
