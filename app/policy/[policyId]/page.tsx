@@ -6,9 +6,11 @@ import { useSession } from "next-auth/react";
 import { Edit, ArrowLeft, Tag, BookOpen, Users, Building2, Star, Globe, Download, ExternalLink, FileText, Trash2, AlertCircle, CheckCircle, Pin, PinOff } from "lucide-react";
 import dynamic from "next/dynamic";
 import "@uiw/react-markdown-preview/markdown.css";
-import { DEPARTMENTS } from "../../../lib/validations";
+import { DEPARTMENTS, POLICY_ORGANIZATIONS } from "../../../lib/validations";
 
 const MarkdownPreview = dynamic(() => import("@uiw/react-markdown-preview"), { ssr: false });
+
+// Inline org icons to avoid external asset dependency
 
 // Utility functions for file handling
 function formatFileSize(bytes: number): string {
@@ -497,8 +499,17 @@ export default function PolicyDetailPage() {
                 <span className="me-3">
                   <BookOpen size={14} className="me-1" /> {policy.category}
                 </span>
-                <span className="me-3">
-                  <Globe size={14} className="me-1" /> {policy.organization}
+                <span className="me-3 align-items-center" style={{ lineHeight: 1 }}>
+                  {policy.organization === 'mertzcrew' ? (
+                    <img src="/Mertzcrew.jpeg" alt="Mertzcrew" className="org-icon" loading="lazy" />
+                  ) : policy.organization === 'mertz_production' ? (
+                    <img src="/mertz_productions_logo.jpeg" alt="Mertz Production" className="org-icon" loading="lazy" />
+                  ) : (
+                    <Globe size={14} className="me-1 align-middle" />
+                  )}
+                  <span className="align-middle">
+                    {(POLICY_ORGANIZATIONS.find(o => o.value === policy.organization)?.display) || policy.organization}
+                  </span>
                 </span>
                 {policy.department && (
                   <span className="me-3">
