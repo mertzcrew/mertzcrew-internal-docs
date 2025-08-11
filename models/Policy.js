@@ -39,61 +39,11 @@ const PolicySchema = new mongoose.Schema({
       "Other"
     ]
   },
-  pending_changes: {
-    title: {
-      type: String,
-      trim: true,
-      maxlength: [200, 'Title cannot be more than 200 characters']
-    },
-    content: {
-      type: String,
-      trim: true
-    },
-    description: {
-      type: String,
-      trim: true,
-      maxlength: [500, 'Description cannot be more than 500 characters']
-    },
-    category: {
-      type: String,
-      trim: true,
-      enum: [
-        "HR",
-        "Culture",
-        "Documentation",
-        "Process",
-        "Safety",
-        "Quality",
-        "Other"
-      ]
-    },
-    organization: {
-      type: String,
-      trim: true,
-      maxlength: [100, 'Organization cannot be more than 100 characters'],
-      enum: [
-        "all",
-        'mertzcrew',
-        'mertz_production'
-      ]
-    },
-    department: {
-      type: String,
-      trim: true,
-      enum: ['tech_team', 'customer_support', 'all'],
-      default: "all"
-    },
-    effective_date: {
-      type: Date
-    },
-    expiry_date: {
-      type: Date
-    },
-    tags: [{
-      type: String,
-      trim: true
-    }]
-  },
+  pending_changes: { type: Object, default: {} },
+
+  // When the policy is published (or republished), capture the timestamp
+  publish_date: { type: Date, default: null },
+
   version: {
     type: Number,
     default: 1

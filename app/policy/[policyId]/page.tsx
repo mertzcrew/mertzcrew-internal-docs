@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Edit, ArrowLeft, Tag, BookOpen, Users, Building2, Star, Globe, Download, ExternalLink, FileText, Trash2, AlertCircle, CheckCircle, Pin, PinOff } from "lucide-react";
@@ -9,8 +9,6 @@ import "@uiw/react-markdown-preview/markdown.css";
 import { DEPARTMENTS, POLICY_ORGANIZATIONS } from "../../../lib/validations";
 
 const MarkdownPreview = dynamic(() => import("@uiw/react-markdown-preview"), { ssr: false });
-
-// Inline org icons to avoid external asset dependency
 
 // Utility functions for file handling
 function formatFileSize(bytes: number): string {
@@ -302,6 +300,25 @@ export default function PolicyDetailPage() {
   // Check if policy has pending changes
   const hasPendingChanges = policy?.pending_changes && Object.keys(policy.pending_changes).length > 0;
 
+  // Build the displayed policy by overlaying pending_changes on published data
+  const displayPolicy = useMemo(() => {
+    if (!policy) return null as any;
+    if (policy.status === 'active' && hasPendingChanges) {
+      const pc = policy.pending_changes || {};
+      return {
+        ...policy,
+        title: pc.title ?? policy.title,
+        content: pc.content ?? policy.content,
+        description: pc.description ?? policy.description,
+        category: pc.category ?? policy.category,
+        tags: pc.tags ?? policy.tags,
+        organization: pc.organization ?? policy.organization,
+        attachments: pc.attachments ?? policy.attachments
+      } as Policy;
+    }
+    return policy;
+  }, [policy, hasPendingChanges]);
+
   if (loading) {
     return (
       <div className="min-vh-100 d-flex align-items-center justify-content-center">
@@ -312,7 +329,7 @@ export default function PolicyDetailPage() {
     );
   }
 
-  if (error || !policy) {
+  if (error || !policy || !displayPolicy) {
     return (
       <div className="container py-5">
         <div className="alert alert-danger" role="alert">
@@ -324,8 +341,6 @@ export default function PolicyDetailPage() {
       </div>
     );
   }
-
-
 
   return (
     <div className="container py-5">
@@ -351,9 +366,15 @@ export default function PolicyDetailPage() {
                   <AlertCircle size={20} className="me-2" />
                   <div>
                     <strong>Pending Changes:</strong> This policy has unpublished changes waiting for admin approval.
+                    <button
+                      className="btn btn-sm btn-outline-secondary ms-3"
+                      onClick={() => router.push(`/policy/${policy._id}/current`)}
+                    >
+                      View published policy
+                    </button>
                     {canPublish && (
                       <button
-                        className="btn btn-sm btn-warning ms-3"
+                        className="btn btn-sm btn-warning ms-2"
                         onClick={handlePublish}
                         disabled={isPublishing}
                       >
@@ -375,7 +396,7 @@ export default function PolicyDetailPage() {
               )}
 
               <div className="d-flex justify-content-between align-items-center mb-3">
-                <h2 className="mb-0">{policy.title}</h2>
+                <h2 className="mb-0">{displayPolicy.title}</h2>
                 <div className="d-flex gap-2">
                   {/* Pin/Unpin Button */}
                   <button
@@ -397,7 +418,6 @@ export default function PolicyDetailPage() {
                     )}
                   </button>
 
-                  
                   {canEdit && (
                     <button
                       className="btn btn-outline-primary"
@@ -406,82 +426,8 @@ export default function PolicyDetailPage() {
                       <Edit size={16} className="me-2" /> Edit
                     </button>
                   )}
-                  {canPublish && policy.status === 'draft' && (
-                    <button
-                      className="btn btn-outline-success"
-                      onClick={handlePublish}
-                      disabled={isPublishing}
-                    >
-                      {isPublishing ? (
-                        <>
-                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                          Publishing...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle size={16} className="me-2" />
-                          Publish
-                        </>
-                      )}
-                    </button>
-                  )}
-                  <button
-                    className="btn btn-outline-danger"
-                    onClick={() => setShowDeleteConfirm(true)}
-                    disabled={isDeleting}
-                  >
-                    <Trash2 size={16} className="me-2" /> Delete
-                  </button>
                 </div>
               </div>
-
-              {/* Delete Confirmation Modal */}
-              {showDeleteConfirm && (
-                <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                  <div className="modal-dialog modal-dialog-centered">
-                    <div className="modal-content">
-                      <div className="modal-header">
-                        <h5 className="modal-title">Confirm Deletion</h5>
-                        <button
-                          type="button"
-                          className="btn-close"
-                          onClick={() => setShowDeleteConfirm(false)}
-                          disabled={isDeleting}
-                        ></button>
-                      </div>
-                      <div className="modal-body">
-                        <p>Are you sure you want to delete "<strong>{policy.title}</strong>"?</p>
-                        <p className="text-danger mb-0">This action cannot be undone.</p>
-                      </div>
-                      <div className="modal-footer">
-                        <button
-                          type="button"
-                          className="btn btn-secondary"
-                          onClick={() => setShowDeleteConfirm(false)}
-                          disabled={isDeleting}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-danger"
-                          onClick={handleDelete}
-                          disabled={isDeleting}
-                        >
-                          {isDeleting ? (
-                            <>
-                              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                              Deleting...
-                            </>
-                          ) : (
-                            'Delete Policy'
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Error Alert */}
               {error && (
@@ -497,24 +443,24 @@ export default function PolicyDetailPage() {
 
               <div className="mb-3 text-muted">
                 <span className="me-3">
-                  <BookOpen size={14} className="me-1" /> {policy.category}
+                  <BookOpen size={14} className="me-1" /> {displayPolicy.category}
                 </span>
-                <span className="me-3 align-items-center" style={{ lineHeight: 1 }}>
-                  {policy.organization === 'mertzcrew' ? (
+                <span className="me-3 d-inline-flex align-items-center" style={{ lineHeight: 1 }}>
+                  {displayPolicy.organization === 'mertzcrew' ? (
                     <img src="/Mertzcrew.jpeg" alt="Mertzcrew" className="org-icon" loading="lazy" />
-                  ) : policy.organization === 'mertz_production' ? (
+                  ) : displayPolicy.organization === 'mertz_production' ? (
                     <img src="/mertz_productions_logo.jpeg" alt="Mertz Production" className="org-icon" loading="lazy" />
                   ) : (
                     <Globe size={14} className="me-1 align-middle" />
                   )}
                   <span className="align-middle">
-                    {(POLICY_ORGANIZATIONS.find(o => o.value === policy.organization)?.display) || policy.organization}
+                    {(POLICY_ORGANIZATIONS.find(o => o.value === displayPolicy.organization)?.display) || displayPolicy.organization}
                   </span>
                 </span>
-                {policy.department && (
+                {displayPolicy.department && (
                   <span className="me-3">
                     <Building2 size={14} className="me-1" />
-                    {DEPARTMENTS.find(d => d.value === policy.department)?.display || policy.department}
+                    {DEPARTMENTS.find(d => d.value === displayPolicy.department)?.display || displayPolicy.department}
                   </span>
                 )}
                 <span className="me-3">
@@ -522,10 +468,10 @@ export default function PolicyDetailPage() {
                     {policy.status === 'active' ? 'Published' : 'Draft'}
                   </span>
                 </span>
-                {policy.tags && policy.tags.length > 0 && (
+                {displayPolicy.tags && displayPolicy.tags.length > 0 && (
                   <span>
                     <Tag size={14} className="me-1" />
-                    {policy.tags.map((tag, idx) => (
+                    {displayPolicy.tags.map((tag: string, idx: number) => (
                       <span key={idx} className="badge bg-light text-dark me-1">
                         {tag}
                       </span>
@@ -562,14 +508,14 @@ export default function PolicyDetailPage() {
 
               <div className="mb-3">
                 <strong>Description:</strong>
-                <div className="text-muted mt-1">{policy.description}</div>
+                <div className="text-muted mt-1">{displayPolicy.description}</div>
               </div>
 
               <div className="mb-4">
                 <h4 className="mb-3">Content</h4>
                 <div data-color-mode="light">
-                  {policy.content ? (
-                    <MarkdownPreview source={policy.content} />
+                  {displayPolicy.content ? (
+                    <MarkdownPreview source={displayPolicy.content} />
                   ) : (
                     <div className="text-muted p-3 border rounded bg-light">
                       No content available
@@ -609,14 +555,14 @@ export default function PolicyDetailPage() {
               )}
 
               {/* Attachments Section */}
-              {policy.attachments && policy.attachments.length > 0 && (
+              {displayPolicy.attachments && displayPolicy.attachments.length > 0 && (
                 <div className="mb-4">
                   <h4 className="mb-3">
                     <FileText size={20} className="me-2" />
-                    Attachments ({policy.attachments.length})
+                    Attachments ({displayPolicy.attachments.length})
                   </h4>
                   <div className="attachments-list">
-                    {policy.attachments.map((attachment, index) => (
+                    {displayPolicy.attachments.map((attachment: PolicyAttachment, index: number) => (
                       <div key={index} className="attachment-item border rounded p-3 mb-2 bg-light">
                         <div className="d-flex justify-content-between align-items-center">
                           <div className="d-flex align-items-center">

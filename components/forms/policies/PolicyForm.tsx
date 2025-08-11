@@ -36,6 +36,7 @@ interface PolicyFormProps {
     category: string;
     organization: string;
     department?: string;
+    effective_date?: string;
     // description: string;
     tags: string;
     body?: string;
@@ -183,6 +184,18 @@ function PolicyForm({
                     ))}
                   </select>
                   {errors.department && <div className="invalid-feedback">{errors.department}</div>}
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Effective Date</label>
+                  <input
+                    type="date"
+                    name="effective_date"
+                    className={`form-control${errors.effective_date ? " is-invalid" : ""}`}
+                    value={form.effective_date || ""}
+                    onChange={handleChange}
+                  />
+                  {errors.effective_date && <div className="invalid-feedback">{errors.effective_date}</div>}
                 </div>
 
                 {/* <div className="mb-3">

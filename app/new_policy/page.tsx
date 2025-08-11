@@ -29,6 +29,7 @@ interface PolicyFormValues {
   category: string;
   organization: string;
   department?: string;
+  effective_date?: string;
   description: string;
   tags: string;
   body: string;
@@ -36,11 +37,18 @@ interface PolicyFormValues {
   isDraft: boolean;
 }
 
+const today = new Date();
+const yyyy = today.getFullYear();
+const mm = String(today.getMonth() + 1).padStart(2, '0');
+const dd = String(today.getDate()).padStart(2, '0');
+const todayISO = `${yyyy}-${mm}-${dd}`;
+
 const initialForm: PolicyFormValues = {
   title: "",
   category: "",
   organization: "",
   department: "",
+  effective_date: todayISO,
   description: "",
   tags: "",
   body: "",
@@ -211,6 +219,7 @@ export default function NewPolicyPage() {
           category: form.category,
           organization: form.organization,
           department: form.department || undefined,
+          effective_date: form.effective_date ? new Date(form.effective_date) : undefined,
           tags: form.tags,
           status: form.status,
           isDraft: form.isDraft,

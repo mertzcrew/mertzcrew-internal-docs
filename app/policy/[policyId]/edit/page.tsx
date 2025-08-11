@@ -120,7 +120,7 @@ export default function EditPolicyPage() {
     if (!values.title.trim()) errs.title = "Title is required";
     if (!values.category.trim()) errs.category = "Category is required";
     if (!values.organization.trim()) errs.organization = "Organization is required";
-    if (!values.description.trim()) errs.description = "Description is required";
+    // Description is optional
     
     // Body content is only required if there are no attachments
     const hasAttachments = attachments.length > 0;

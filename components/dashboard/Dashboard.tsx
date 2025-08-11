@@ -3,26 +3,26 @@
 import { useState, useEffect } from "react"
 import { useSession, signOut } from "next-auth/react"
 import {
-  Search,
-  Bell,
-  Plus,
-  FileText,
-  Users,
-  Eye,
-  Folder,
-  TrendingUp,
-  MoreHorizontal,
-  Home,
-  BookOpen,
-  Star,
-  Clock,
-  Tag,
-  Share2,
-  Settings,
-  User,
-  Building2,
-  LogOut,
-  Pin,
+    Search,
+    Bell,
+    Plus,
+    FileText,
+    Users,
+    Eye,
+    Folder,
+    TrendingUp,
+    MoreHorizontal,
+    Home,
+    BookOpen,
+    Star,
+    Clock,
+    Tag,
+    Share2,
+    Settings,
+    User,
+    Building2,
+    LogOut,
+    Pin,
 } from "lucide-react"
 import Header from "../layout/Header"
 import Button from './ui/Button';
@@ -33,21 +33,21 @@ import GlobalSearch from '../search/GlobalSearch';
 import { useRouter } from 'next/navigation';
 
 interface Policy {
-  _id: string;
-  title: string;
-  content: string;
-  description: string;
-  category: string;
-  status: string;
-  created_by: {
     _id: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-  };
-  createdAt: string;
-  updatedAt: string;
-  views?: number;
+    title: string;
+    content: string;
+    description: string;
+    category: string;
+    status: string;
+    created_by: {
+        _id: string;
+        first_name: string;
+        last_name: string;
+        email: string;
+    };
+    createdAt: string;
+    updatedAt: string;
+    views?: number;
 }
 
 export default function Dashboard() {
@@ -191,32 +191,6 @@ export default function Dashboard() {
     },
   ]
 
-  const popularDocuments = [
-    {
-      rank: 1,
-      title: "Getting Started Guide",
-      views: 567,
-      change: "+23%",
-    },
-    {
-      rank: 2,
-      title: "Benefits Overview",
-      views: 445,
-      change: "+18%",
-    },
-    {
-      rank: 3,
-      title: "Time Off Policy",
-      views: 389,
-      change: "+15%",
-    },
-    {
-      rank: 4,
-      title: "Remote Work Guidelines",
-      views: 298,
-      change: "+12%",
-    },
-  ]
 
   return (
     <div className="flex-grow-1">
@@ -235,7 +209,7 @@ export default function Dashboard() {
             </button> */}
             <button className="btn text-white" style={{ backgroundColor: "#ca1f27" }} onClick={() => router.push('/new_policy')}>
               <Plus size={16} className="me-1" />
-              New Document
+              New Policy
             </button>
           </div>
         </div>
@@ -281,7 +255,7 @@ export default function Dashboard() {
 					<div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
 					<h5 className="mb-0">
 						<Pin size={20} className="me-2 text-warning" />
-						My Pinned Documents
+						My Pinned Policies
 					</h5>
 					{totalPinnedCount > 5 && (
 						<button 
@@ -298,7 +272,7 @@ export default function Dashboard() {
 						<div className="spinner-border spinner-border-sm me-2" role="status">
 							<span className="visually-hidden">Loading...</span>
 						</div>
-						Loading pinned documents...
+						Loading pinned policies...
 						</div>
 					) : pinnedError ? (
 						<div className="text-center py-4 text-danger">
@@ -306,7 +280,7 @@ export default function Dashboard() {
 						</div>
 					) : pinnedDocuments.length === 0 ? (
 						<div className="text-center py-4 text-muted">
-						<small>No pinned documents yet. Pin policies you want to access quickly!</small>
+						<small>No pinned policies yet. Pin policies you want to access quickly!</small>
 						</div>
 					) : (
 						pinnedDocuments.map((doc, index) => (
@@ -327,7 +301,7 @@ export default function Dashboard() {
 			<div className="col-md-6 mb-4">
 				<div className="card border-0 shadow-sm">
 				<div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-					<h5 className="mb-0">Recent Documents</h5>
+					<h5 className="mb-0">Recent Policies</h5>
 					<button 
 					className="btn btn-link text-decoration-none p-0"
 					onClick={() => router.push('/policies')}
@@ -341,7 +315,7 @@ export default function Dashboard() {
 						<div className="spinner-border spinner-border-sm me-2" role="status">
 						<span className="visually-hidden">Loading...</span>
 						</div>
-						Loading documents...
+						Loading polocies...
 					</div>
 					) : error ? (
 					<div className="text-center py-4 text-danger">
@@ -359,7 +333,7 @@ export default function Dashboard() {
 					</div>
 					) : recentDocuments.length === 0 ? (
 					<div className="text-center py-4 text-muted">
-						<small>No recent documents found. Create your first policy to get started!</small>
+						<small>No recent polocies found. Create your first policy to get started!</small>
 						<div className="mt-3">
 						<button 
 							className="btn btn-sm btn-primary"

@@ -148,7 +148,9 @@ export async function POST(request) {
       department,
       attachments: processedAttachments,
       assigned_users: assignedUsersArray,
+      effective_date: body.effective_date || new Date(),
       status: initialStatus,
+      publish_date: initialStatus === 'active' ? new Date() : null,
       created_by: user._id,
       updated_by: user._id
     };

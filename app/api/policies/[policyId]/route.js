@@ -213,6 +213,8 @@ export async function PATCH(request, { params }) {
       console.log('Setting status to active');
       const wasActive = policy.status === 'active';
       policy.status = 'active';
+      // Update publish_date on publish (first publish or republish)
+      policy.publish_date = new Date();
       policy.updated_by = user._id;
       await policy.save();
       console.log('Policy saved with status:', policy.status);
