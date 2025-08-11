@@ -50,6 +50,7 @@ interface Policy {
   department?: string;
   tags: string[];
   status: string;
+  publish_date?: string | Date;
   pending_changes?: any;
   assigned_users?: Array<{
     _id: string;
@@ -366,12 +367,14 @@ export default function PolicyDetailPage() {
                   <AlertCircle size={20} className="me-2" />
                   <div>
                     <strong>Pending Changes:</strong> This policy has unpublished changes waiting for admin approval.
-                    <button
-                      className="btn btn-sm btn-outline-secondary ms-3"
-                      onClick={() => router.push(`/policy/${policy._id}/current`)}
-                    >
-                      View published policy
-                    </button>
+                    {policy.publish_date && (
+                      <button
+                        className="btn btn-sm btn-outline-secondary ms-3"
+                        onClick={() => router.push(`/policy/${policy._id}/current`)}
+                      >
+                        View published policy
+                      </button>
+                    )}
                     {canPublish && (
                       <button
                         className="btn btn-sm btn-warning ms-2"
