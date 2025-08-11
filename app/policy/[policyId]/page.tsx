@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { Edit, ArrowLeft, Tag, BookOpen, Users, Building2, Star, Globe, Download, ExternalLink, FileText, Trash2, AlertCircle, CheckCircle, Pin, PinOff } from "lucide-react";
 import dynamic from "next/dynamic";
 import "@uiw/react-markdown-preview/markdown.css";
+import { DEPARTMENTS } from "../../../lib/validations";
 
 const MarkdownPreview = dynamic(() => import("@uiw/react-markdown-preview"), { ssr: false });
 
@@ -46,6 +47,7 @@ interface Policy {
   description: string;
   category: string;
   organization: string;
+  department?: string;
   tags: string[];
   status: string;
   pending_changes?: any;
@@ -498,6 +500,12 @@ export default function PolicyDetailPage() {
                 <span className="me-3">
                   <Globe size={14} className="me-1" /> {policy.organization}
                 </span>
+                {policy.department && (
+                  <span className="me-3">
+                    <Building2 size={14} className="me-1" />
+                    {DEPARTMENTS.find(d => d.value === policy.department)?.display || policy.department}
+                  </span>
+                )}
                 <span className="me-3">
                   <span className={`badge ${policy.status === 'active' ? 'bg-success' : 'bg-warning'}`}>
                     {policy.status === 'active' ? 'Published' : 'Draft'}

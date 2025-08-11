@@ -77,6 +77,12 @@ const PolicySchema = new mongoose.Schema({
         'mertz_production'
       ]
     },
+    department: {
+      type: String,
+      trim: true,
+      enum: ['tech_team', 'customer_support', 'all'],
+      default: "all"
+    },
     effective_date: {
       type: Date
     },
@@ -122,6 +128,12 @@ const PolicySchema = new mongoose.Schema({
       'mertzcrew',
       'mertz_production'
     ]
+  },
+  department: {
+    type: String,
+    trim: true,
+    maxlength: [100, 'Department cannot be more than 100 characters'],
+    required: false
   },
   assigned_users: [{
     type: mongoose.Schema.Types.ObjectId,

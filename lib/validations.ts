@@ -29,9 +29,9 @@ export type Organization = typeof ORGANIZATIONS[number];
 
 //'tech_team', 'customer_support', 'misc'
 
-export const DEPARTMENTS = [{value: "tech_team", display: "Tech Team"}, 
-    {value: "customer_support", display: "Customer Support"}, 
-    {value: "misc", display: "Misc"}
+export const DEPARTMENTS = [{value: "tech_team", display: "Tech Team Only"}, 
+    {value: "customer_support", display: "Customer Support Only"}, 
+    {value: "all", display: "All"}
 ] as const;
 export type Department = typeof DEPARTMENTS[number];
 

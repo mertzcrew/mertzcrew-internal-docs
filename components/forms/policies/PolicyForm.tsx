@@ -114,7 +114,7 @@ function PolicyForm({
                 </div>
               )}
               
-              <form onSubmit={handleSubmit}>
+              <form onSubmit={handleSubmit} noValidate>
                 <div className="mb-3">
                   <label className="form-label fw-semibold">Title *</label>
                   <input

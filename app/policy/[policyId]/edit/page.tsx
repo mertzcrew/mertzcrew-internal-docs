@@ -22,6 +22,7 @@ interface Policy {
   description: string;
   category: string;
   organization: string;
+  department?: string;
   tags: string[];
   status: string;
   attachments?: PolicyAttachment[];
@@ -31,6 +32,7 @@ interface PolicyFormValues {
   title: string;
   category: string;
   organization: string;
+  department?: string;
   description: string;
   tags: string;
   content: string;
@@ -41,6 +43,7 @@ const initialForm: PolicyFormValues = {
   title: "",
   category: "",
   organization: "all",
+  department: "",
   description: "",
   tags: "",
   content: "",
@@ -79,6 +82,7 @@ export default function EditPolicyPage() {
           description: policy.description,
           category: policy.category,
           organization: policy.organization,
+          department: policy.department || "",
           tags: policy.tags ? policy.tags.join(", ") : "",
           status: policy.status,
         };
@@ -143,16 +147,17 @@ export default function EditPolicyPage() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            title: form.title,
-            content: form.content,
-            description: form.description,
-            category: form.category,
-            organization: form.organization,
-            tags: form.tags,
-            status: form.status,
-            attachments: attachments
-          }),
+                      body: JSON.stringify({
+              title: form.title,
+              content: form.content,
+              description: form.description,
+              category: form.category,
+              organization: form.organization,
+              department: form.department || undefined,
+              tags: form.tags,
+              status: form.status,
+              attachments: attachments
+            }),
         });
 
         const result = await response.json();

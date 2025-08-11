@@ -28,6 +28,7 @@ interface PolicyFormValues {
   title: string;
   category: string;
   organization: string;
+  department?: string;
   description: string;
   tags: string;
   body: string;
@@ -39,6 +40,7 @@ const initialForm: PolicyFormValues = {
   title: "",
   category: "",
   organization: "",
+  department: "",
   description: "",
   tags: "",
   body: "",
@@ -152,7 +154,8 @@ export default function NewPolicyPage() {
     if (!values.title.trim()) errs.title = "Title is required";
     if (!values.category.trim()) errs.category = "Category is required";
     if (!values.organization.trim()) errs.organization = "Organization is required";
-    if (!values.description.trim()) errs.description = "Description is required";
+    // Description is optional
+    // if (!values.description.trim()) errs.description = "Description is required";
     
     // Body content is only required if there are no attachments
     const hasAttachments = attachments.length > 0;
@@ -207,6 +210,7 @@ export default function NewPolicyPage() {
           description: form.description,
           category: form.category,
           organization: form.organization,
+          department: form.department || undefined,
           tags: form.tags,
           status: form.status,
           isDraft: form.isDraft,
