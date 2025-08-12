@@ -100,7 +100,7 @@ export default function PolicyDetailPage() {
     if (session?.user?.id && policy) {
       checkPinStatus();
     }
-  }, [session, policyId]);
+  }, [session, policyId, policy]);
 
   // Track view count only once when policy is loaded and is active
   useEffect(() => {
@@ -156,7 +156,7 @@ export default function PolicyDetailPage() {
       });
       if (response.ok) {
         const result = await response.json();
-        setIsPinned(result.isPinned || false);
+        setIsPinned(!!result.isPinned);
       } else {
         console.error('checkPinStatus: API error:', response.status);
       }
@@ -182,7 +182,7 @@ export default function PolicyDetailPage() {
 
       const result = await response.json();
       if (response.ok) {
-        setIsPinned(result.isPinned);
+        setIsPinned(!!result.isPinned);
         setSubmitMessage({ 
           type: 'success', 
           text: result.message 

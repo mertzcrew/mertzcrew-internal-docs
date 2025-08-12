@@ -63,8 +63,10 @@ export async function GET(request, { params }) {
 
         // If user can view the policy, check if it's actually pinned
         const userPinnedPolicies = await UserPinnedPolicy.findOne({ userId: user._id });
-        const isPinned = userPinnedPolicies && userPinnedPolicies.pinnedPolicies ? 
-          userPinnedPolicies.pinnedPolicies.some(item => item && item.policyId && item.policyId.toString() === policyId) : false;
+        const isPinned = !!(userPinnedPolicies?.pinnedPolicies?.some((item) => {
+          const id = item && item.policyId ? item.policyId.toString() : (item && item.toString ? item.toString() : null);
+          return id === policyId;
+        }));
         
         return NextResponse.json({
           success: true,
@@ -182,7 +184,7 @@ export async function PATCH(request, { params }) {
       user.role === 'admin' || 
       policy.assigned_users.some(assignedUser => assignedUser._id.toString() === user._id.toString());
 
-    if (!canEdit) {
+    if (action !== 'togglePin' && !canEdit) {
       return NextResponse.json(
         { success: false, message: 'Insufficient permissions to edit this policy' },
         { status: 403 }
@@ -268,7 +270,10 @@ export async function PATCH(request, { params }) {
           });
         }
 
-        const isPinned = userPinnedPolicies.pinnedPolicies.some(item => item && item.policyId && item.policyId.toString() === policyId);
+        const isPinned = !!(userPinnedPolicies.pinnedPolicies.some((item) => {
+          const id = item && item.policyId ? item.policyId.toString() : (item && item.toString ? item.toString() : null);
+          return id === policyId;
+        }));
         
         if (isPinned) {
           // Unpin the policy
