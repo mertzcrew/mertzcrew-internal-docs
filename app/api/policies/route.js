@@ -352,29 +352,23 @@ export async function GET(request) {
     } else {
       console.log('Non-admin user - filtering policies');
       console.log('User ID:', user._id);
-      // For non-admin users, show:
-      // 1. All published (active) policies
-      // 2. Draft policies where the user is assigned
-      policiesQuery = Policy.find({
-        $or: [
-          { status: 'active' }, // Published policies visible to everyone
-          { 
-            status: 'draft',
-            assigned_users: user._id // Draft policies only visible to assigned users
-          }
-        ]
-      });
-      
-      // Apply status filter if provided (for non-admin users)
+
+      // Visibility rules for non-admins:
+      // - Active (published) policies only if organization is "all" or matches user's organization
+      // - Draft policies only if the user is assigned
+      const activeVisibility = { status: 'active', organization: { $in: ['all', user.organization] } };
+      const draftVisibility = { status: 'draft', assigned_users: user._id };
+
       if (status) {
         if (status === 'active') {
-          policiesQuery = Policy.find({ status: 'active' });
+          policiesQuery = Policy.find(activeVisibility);
         } else if (status === 'draft') {
-          policiesQuery = Policy.find({ 
-            status: 'draft',
-            assigned_users: user._id 
-          });
+          policiesQuery = Policy.find(draftVisibility);
+        } else {
+          policiesQuery = Policy.find({ $or: [activeVisibility, draftVisibility] });
         }
+      } else {
+        policiesQuery = Policy.find({ $or: [activeVisibility, draftVisibility] });
       }
     }
 

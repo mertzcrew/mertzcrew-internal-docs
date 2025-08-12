@@ -168,23 +168,25 @@ function PolicyForm({
                   {errors.organization && <div className="invalid-feedback">{errors.organization}</div>}
                 </div>
 
-                <div className="mb-3">
-                  <label className="form-label fw-semibold">Department</label>
-                  <select
-                    name="department"
-                    className={`form-select${errors.department ? " is-invalid" : ""}`}
-                    value={form.department || ""}
-                    onChange={handleChange}
-                  >
-                    <option value="">Select Department (Optional)</option>
-                    {DEPARTMENTS.map(dept => (
-                      <option key={dept.value} value={dept.value}>
-                        {dept.display}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.department && <div className="invalid-feedback">{errors.department}</div>}
-                </div>
+                {form.organization === 'mertzcrew' && (
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold">Department</label>
+                    <select
+                      name="department"
+                      className={`form-select${errors.department ? " is-invalid" : ""}`}
+                      value={form.department || ""}
+                      onChange={handleChange}
+                    >
+                      <option value="">Select Department (Optional)</option>
+                      {DEPARTMENTS.map(dept => (
+                        <option key={dept.value} value={dept.value}>
+                          {dept.display}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.department && <div className="invalid-feedback">{errors.department}</div>}
+                  </div>
+                )}
 
                 <div className="mb-3">
                   <label className="form-label fw-semibold">Effective Date</label>

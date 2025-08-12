@@ -132,6 +132,14 @@ export default function NewPolicyPage() {
         isDraft,
         status: isDraft ? "draft" : "active"
       });
+    } else if (e.target.name === 'organization') {
+      const org = e.target.value;
+      setForm({
+        ...form,
+        organization: org,
+        // Clear department when org is not mertzcrew
+        department: org === 'mertzcrew' ? form.department : ''
+      });
     } else {
       setForm({ ...form, [e.target.name]: e.target.value });
     }

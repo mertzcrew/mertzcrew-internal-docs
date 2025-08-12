@@ -69,6 +69,7 @@ export default function PoliciesPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { data: session, status } = useSession();
   const router = useRouter();
+  console.log('line 72', session);
 
   // Icon mapping for categories
   const getCategoryIcon = (categoryName: string) => {

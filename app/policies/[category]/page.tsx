@@ -63,7 +63,6 @@ export default function CategoryPoliciesPage() {
   const router = useRouter();
   const params = useParams();
   const categoryName = decodeURIComponent(params.category as string);
-
   // Icon mapping for categories
   const getCategoryIcon = (categoryName: string) => {
     const category = categoryName.toLowerCase();
@@ -387,7 +386,7 @@ export default function CategoryPoliciesPage() {
                         >
                           <span className="text-muted">•••</span>
                         </button>
-                        <ul className="dropdown-menu">
+                        <ul className="dropdown-menu dropdown-menu-end">
                           <li>
                             <a 
                               className="dropdown-item" 
@@ -401,33 +400,37 @@ export default function CategoryPoliciesPage() {
                               <Eye size={14} className="me-2" />View
                             </a>
                           </li>
-                          <li>
-                            <a 
-                              className="dropdown-item" 
-                              href="#"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                router.push(`/policy/${policy._id}/edit`);
-                              }}
-                            >
-                              <Edit size={14} className="me-2" />Edit
-                            </a>
-                          </li>
-                          <li><hr className="dropdown-divider" /></li>
-                          <li>
-                            <a 
-                              className="dropdown-item text-danger" 
-                              href="#"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                confirmDelete(policy._id);
-                              }}
-                            >
-                              <Trash2 size={14} className="me-2" />Delete
-                            </a>
-                          </li>
+                          {session?.user?.role === 'admin' && (
+                            <>
+                              <li>
+                                <a 
+                                  className="dropdown-item" 
+                                  href="#"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    router.push(`/policy/${policy._id}/edit`);
+                                  }}
+                                >
+                                  <Edit size={14} className="me-2" />Edit
+                                </a>
+                              </li>
+                              <li><hr className="dropdown-divider" /></li>
+                              <li>
+                                <a 
+                                  className="dropdown-item text-danger" 
+                                  href="#"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    confirmDelete(policy._id);
+                                  }}
+                                >
+                                  <Trash2 size={14} className="me-2" />Delete
+                                </a>
+                              </li>
+                            </>
+                          )}
                         </ul>
                       </div>
                     </div>
