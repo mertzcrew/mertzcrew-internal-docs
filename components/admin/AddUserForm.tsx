@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
     USER_ROLES, 
@@ -24,9 +24,13 @@ interface FormData {
   phone?: string;
 }
 
-// Constants are now imported from lib/validations.ts
+interface AddUserFormProps {
+  editMode?: boolean;
+  initialData?: Partial<FormData>;
+  userId?: string;
+}
 
-export default function AddUserForm() {
+export default function AddUserForm({ editMode = false, initialData, userId }: AddUserFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -44,6 +48,24 @@ export default function AddUserForm() {
     position: '',
     phone: ''
   });
+
+  useEffect(() => {
+    if (editMode && initialData) {
+      setFormData(prev => ({
+        ...prev,
+        email: initialData.email ?? '',
+        password: '', // never prefill password
+        first_name: initialData.first_name ?? '',
+        last_name: initialData.last_name ?? '',
+        role: initialData.role ?? 'associate',
+        permissions: initialData.permissions ?? [],
+        organization: initialData.organization ?? '',
+        department: initialData.department ?? '',
+        position: initialData.position ?? '',
+        phone: initialData.phone ?? ''
+      }));
+    }
+  }, [editMode, initialData]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -69,48 +91,60 @@ export default function AddUserForm() {
     setSuccess('');
 
     try {
-      const response = await fetch('/api/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+      // Validate (for edits, password can be empty)
+      const toValidate = { ...formData };
+      if (editMode) delete (toValidate as any).password;
+      const v = validateUser(toValidate);
+      if (!v.isValid) {
+        setError(Object.values(v.errors)[0] || 'Please fix validation errors');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const payload: any = { ...formData };
+      if (editMode && !payload.password) delete payload.password;
+
+      const res = await fetch(editMode && userId ? `/api/users/${userId}` : '/api/users', {
+        method: editMode ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
+      const result = await res.json();
 
-      const result = await response.json();
-
-      if (result.success) {
-        setSuccess('User created successfully!');
-        setFormData({
-          email: '',
-          password: '',
-          first_name: '',
-          last_name: '',
-          role: 'associate',
-          permissions: [],
-          organization: '',
-          department: '',
-          position: '',
-          phone: ''
-        });
-        
-        // Redirect to dashboard after 2 seconds
+      if (res.ok && result.success) {
+        setSuccess(editMode ? 'User updated successfully!' : 'User created successfully!');
         setTimeout(() => {
           router.push('/dashboard');
-        }, 2000);
+        }, 1500);
       } else {
-        setError(result.message || 'Failed to create user');
+        setError(result.message || (editMode ? 'Failed to update user' : 'Failed to create user'));
       }
     } catch (err) {
-      setError('An error occurred while creating the user');
+      setError('An error occurred while saving the user');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const isFormValid = () => {
-    const validation = validateUser(formData);
-    return validation.isValid;
+    if (editMode) {
+      return (
+        formData.email &&
+        formData.first_name &&
+        formData.last_name &&
+        formData.organization &&
+        formData.department
+      );
+    }
+    return (
+      formData.email &&
+      formData.password &&
+      formData.first_name &&
+      formData.last_name &&
+      formData.organization &&
+      formData.department &&
+      formData.password.length >= 8
+    );
   };
 
   return (
@@ -179,7 +213,7 @@ export default function AddUserForm() {
 
         <div className="col-md-6 mb-3">
           <label htmlFor="password" className="form-label">
-            Password <span className="text-danger">*</span>
+            {editMode ? 'Create New Password' : (<><span>Password </span><span className="text-danger">*</span></>)}
           </label>
           <input
             type="password"
@@ -188,10 +222,11 @@ export default function AddUserForm() {
             name="password"
             value={formData.password}
             onChange={handleInputChange}
-            required
-            minLength={8}
+            {...(editMode ? {} : { required: true, minLength: 8 })}
           />
-          <div className="form-text">Password must be at least 8 characters long</div>
+          <div className="form-text">
+            {editMode ? 'Leave blank to keep the current password. Set a new password to change it.' : 'Password must be at least 8 characters long'}
+          </div>
         </div>
       </div>
 
@@ -322,10 +357,10 @@ export default function AddUserForm() {
           {isSubmitting ? (
             <>
               <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-              Creating User...
+              {editMode ? 'Updating User...' : 'Creating User...'}
             </>
           ) : (
-            'Create User'
+            editMode ? 'Update User' : 'Create User'
           )}
         </button>
         

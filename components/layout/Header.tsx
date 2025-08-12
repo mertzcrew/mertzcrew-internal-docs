@@ -1,5 +1,5 @@
 "use client";
-import { Home, FileText, BookOpen, Users, Building2, Star, Clock, Tag, Share2, UserPlus, BookOpenText, Search } from 'lucide-react'
+import { Home, FileText, BookOpen, Users, Building2, Star, Clock, Tag, Share2, UserPlus, BookOpenText, Search, UserPen } from 'lucide-react'
 import React from 'react'
 import { useRouter } from 'next/navigation';
 
@@ -19,7 +19,8 @@ function Header({ activeNav, setActiveNav, isAdmin }: { activeNav: string, setAc
 	]
 	if (isAdmin) {
 		sidebarItems = [
-			{ id: "adduser", label: "Add User", icon: UserPlus },
+			{ id: "addUser", label: "Add User", icon: UserPlus },
+			{ id: "editUser", label: "Edit User", icon: UserPen },
 			{ id: "sessiontest", label: "Session Test", icon: BookOpenText },
 		]
 	}
@@ -38,7 +39,8 @@ function Header({ activeNav, setActiveNav, isAdmin }: { activeNav: string, setAc
 					if (item.id === "dashboard") router.push("/dashboard");
 					if (item.id === "search") router.push("/search");
 					if (item.id === "policies") router.push("/policies");
-					if (item.id === "adduser") router.push("/add-user");
+					if (item.id === "addUser") router.push("/add-user");
+					if (item.id === "editUser") router.push("/edit-user");
 					if (item.id === "sessiontest") router.push("/session-test");
 					if (item.id === "hr") router.push("/policies/HR");
 					if (item.id === "culture") router.push("/policies/Culture");
