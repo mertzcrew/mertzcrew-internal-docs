@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react';
-import { signIn, getSession } from 'next-auth/react';
+import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Building2 } from 'lucide-react';
 
@@ -112,7 +112,7 @@ export default function SignIn() {
 
                   <button
                     type="submit"
-                    className="btn btn-lg w-100 text-white fw-semibold"
+                    className="btn btn-lg w-100 text-white fw-semibold mb-3"
                     style={{ backgroundColor: '#ca1f27' }}
                     disabled={isLoading}
                   >
@@ -126,6 +126,20 @@ export default function SignIn() {
                     )}
                   </button>
                 </form>
+
+                <div className="d-flex align-items-center my-3">
+                  <div className="flex-grow-1 border-top" />
+                  <span className="mx-2 text-muted small">OR</span>
+                  <div className="flex-grow-1 border-top" />
+                </div>
+
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary w-100"
+                  onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
+                >
+                  Continue with Google
+                </button>
 
                 {/* Footer */}
                 <div className="text-center mt-4">

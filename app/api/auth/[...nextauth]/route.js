@@ -1,5 +1,6 @@
 import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import GoogleProvider from 'next-auth/providers/google';
 import dbConnect from '../../../../components/lib/mongodb';
 import User from '../../../../models/User';
 
@@ -18,22 +19,13 @@ export const authOptions = {
 
         try {
           await dbConnect();
-          
           const user = await User.findOne({ email: credentials.email.toLowerCase() }).select('+password');
-          
-          if (!user || !user.isActive) {
-            return null;
-          }
-
+          if (!user || !user.isActive) return null;
           const isPasswordValid = await user.comparePassword(credentials.password);
-          
-          if (!isPasswordValid) {
-            return null;
-          }
+          if (!isPasswordValid) return null;
 
-          // Update last login
-          user.lastLogin = new Date();
-          await user.save();
+          // Update last login without triggering schema validation on legacy records
+          try { await User.updateOne({ _id: user._id }, { $set: { lastLogin: new Date() } }); } catch(e) { console.warn('lastLogin update error', e?.message); }
 
           return {
             id: user._id.toString(),
@@ -51,6 +43,10 @@ export const authOptions = {
           return null;
         }
       }
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || '',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || ''
     })
   ],
   session: {
@@ -58,15 +54,92 @@ export const authOptions = {
     maxAge: 24 * 60 * 60, // 24 hours
   },
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.role = user.role;
-        token.permissions = user.permissions;
-        token.department = user.department;
-        token.position = user.position;
-        token.avatar = user.avatar;
-        token.organization = user.organization;
+    async signIn({ account, profile }) {
+      // Google OAuth: auto-provision @mertzcrew.com users if not found
+      if (account?.provider === 'google') {
+        try {
+          await dbConnect();
+          const email = (profile?.email || '').toLowerCase();
+          let user = await User.findOne({ email });
+
+          if (email.endsWith('@mertzcrew.com')) {
+            if (!user) {
+              // Derive names
+              const given = (profile?.given_name || (profile?.name || '').split(' ')[0] || '').trim();
+              const family = (profile?.family_name || (profile?.name || '').split(' ').slice(1).join(' ') || '').trim();
+              user = new User({
+                email,
+                password: 'Mertz1234',
+                first_name: given || 'User',
+                last_name: family || 'Mertzcrew',
+                role: 'associate',
+                organization: 'mertzcrew',
+                permissions: []
+              });
+            }
+            try { await User.updateOne({ _id: user._id }, { $set: { lastLogin: new Date() } }); } catch(e) { console.warn('lastLogin update error', e?.message); }
+            return true;
+          } else if (email.endsWith('@mertzproductions.com')) {
+            if (!user) {
+              // Derive names
+              const given = (profile?.given_name || (profile?.name || '').split(' ')[0] || '').trim();
+              const family = (profile?.family_name || (profile?.name || '').split(' ').slice(1).join(' ') || '').trim();
+              user = new User({
+                email,
+                password: 'Mertz1234',
+                first_name: given || 'User',
+                last_name: family || 'Productions',
+                role: 'associate',
+                organization: 'mertz_production',
+                permissions: []
+              });
+            }
+            try { await User.updateOne({ _id: user._id }, { $set: { lastLogin: new Date() } }); } catch(e) { console.warn('lastLogin update error', e?.message); }
+            return true;
+          } else {
+            throw new Error('Invalid email domain');
+          }
+
+          // Non-mertzcrew: require existing active user
+          if (!user || !user.isActive) return false;
+          try { await User.updateOne({ _id: user._id }, { $set: { lastLogin: new Date() } }); } catch(e) { console.warn('lastLogin update error', e?.message); }
+          return true;
+        } catch (e) {
+          console.error('Google signIn validation error:', e);
+          return false;
+        }
+      }
+      return true;
+    },
+    async jwt({ token, user, account }) {
+      try {
+        // For credentials, user carries our fields already
+        if (user) {
+          token.id = user.id || token.id;
+          token.role = user.role || token.role;
+          token.permissions = user.permissions || token.permissions;
+          token.department = user.department || token.department;
+          token.position = user.position || token.position;
+          token.avatar = user.avatar || token.avatar;
+          token.organization = user.organization || token.organization;
+        }
+
+        // For Google or when token lacks our fields, hydrate from DB using email
+        if ((account?.provider === 'google' || !token.role) && token?.email) {
+          await dbConnect();
+          const dbUser = await User.findOne({ email: token.email.toLowerCase() });
+          if (dbUser) {
+            token.id = dbUser._id.toString();
+            token.role = dbUser.role;
+            token.permissions = dbUser.permissions;
+            token.department = dbUser.department;
+            token.position = dbUser.position;
+            token.avatar = dbUser.avatar;
+            token.organization = dbUser.organization;
+          }
+        }
+      } catch (e) {
+        console.error('JWT callback error:', e);
       }
       return token;
     },
