@@ -26,6 +26,7 @@ interface Policy {
   tags: string[];
   status: string;
   attachments?: PolicyAttachment[];
+  effective_date?: string | Date;
 }
 
 interface PolicyFormValues {
@@ -37,6 +38,7 @@ interface PolicyFormValues {
   tags: string;
   content: string;
   status: string;
+  effective_date?: string;
 }
 
 const initialForm: PolicyFormValues = {
@@ -48,6 +50,7 @@ const initialForm: PolicyFormValues = {
   tags: "",
   content: "",
   status: "draft",
+  effective_date: "",
 };
 
 export default function EditPolicyPage() {
@@ -76,15 +79,25 @@ export default function EditPolicyPage() {
       const result = await response.json();
       if (response.ok) {
         const policy: Policy = result.data;
+        const toDateInput = (d?: string | Date) => {
+          if (!d) return "";
+          const dt = new Date(d);
+          if (isNaN(dt.getTime())) return "";
+          const yyyy = dt.getFullYear();
+          const mm = String(dt.getMonth() + 1).padStart(2, '0');
+          const dd = String(dt.getDate()).padStart(2, '0');
+          return `${yyyy}-${mm}-${dd}`;
+        };
         const formData = {
           title: policy.title,
           content: policy.content,
           description: policy.description,
           category: policy.category,
           organization: policy.organization,
-          department: policy.department || "",
+          department: (policy as any).department || "",
           tags: policy.tags ? policy.tags.join(", ") : "",
           status: policy.status,
+          effective_date: toDateInput(policy.effective_date)
         };
         setForm(formData);
         setOriginalForm(formData);
@@ -147,17 +160,18 @@ export default function EditPolicyPage() {
           headers: {
             'Content-Type': 'application/json',
           },
-                      body: JSON.stringify({
-              title: form.title,
-              content: form.content,
-              description: form.description,
-              category: form.category,
-              organization: form.organization,
-              department: form.department || undefined,
-              tags: form.tags,
-              status: form.status,
-              attachments: attachments
-            }),
+          body: JSON.stringify({
+            title: form.title,
+            content: form.content,
+            description: form.description,
+            category: form.category,
+            organization: form.organization,
+            department: form.department || undefined,
+            effective_date: form.effective_date || undefined,
+            tags: form.tags,
+            status: form.status,
+            attachments: attachments
+          }),
         });
 
         const result = await response.json();
@@ -201,22 +215,34 @@ export default function EditPolicyPage() {
     setSubmitMessage(null);
     
     try {
-      // First save all form changes with status as 'active'
-      const response = await fetch(`/api/policies/${policyId}`, {
+      // First save changes (so pending_changes or draft is updated)
+      const saveRes = await fetch(`/api/policies/${policyId}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: form.title,
           content: form.content,
           description: form.description,
           category: form.category,
           organization: form.organization,
+          department: form.department || undefined,
+          effective_date: form.effective_date || undefined,
           tags: form.tags,
-          status: 'active', // Set status to active to publish
           attachments: attachments
-        }),
+        })
+      });
+      const saveJson = await saveRes.json();
+      if (!saveRes.ok) {
+        setSubmitMessage({ type: 'error', text: saveJson.message || 'Failed to save changes before publishing' });
+        setIsPublishing(false);
+        return;
+      }
+
+      // Then trigger publish
+      const response = await fetch(`/api/policies/${policyId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'publish' })
       });
 
       const result = await response.json();
@@ -230,19 +256,13 @@ export default function EditPolicyPage() {
         setTimeout(() => {
           setSubmitMessage(null);
           router.push(`/policy/${policyId}`);
-        }, 2000);
+        }, 1500);
       } else {
-        setSubmitMessage({ 
-          type: 'error', 
-          text: result.message || 'Failed to publish policy' 
-        });
+        setSubmitMessage({ type: 'error', text: result.message || 'Failed to publish policy' });
       }
     } catch (error) {
       console.error('Error publishing policy:', error);
-      setSubmitMessage({ 
-        type: 'error', 
-        text: 'An error occurred while publishing the policy' 
-      });
+      setSubmitMessage({ type: 'error', text: 'An error occurred while publishing the policy' });
     } finally {
       setIsPublishing(false);
     }

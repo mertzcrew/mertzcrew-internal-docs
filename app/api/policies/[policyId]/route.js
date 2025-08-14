@@ -154,7 +154,9 @@ export async function PATCH(request, { params }) {
       status,
       attachments = [],
       action,
-      assigned_users = []
+      assigned_users = [],
+      department,
+      effective_date
     } = body;
     
     console.log('Edit API - Extracted attachments:', attachments);
@@ -361,6 +363,15 @@ export async function PATCH(request, { params }) {
       );
     }
 
+    // Helper to convert yyyy-mm-dd (or date-like) to Date at noon local time
+    function toNoonDate(input) {
+      if (!input) return undefined;
+      const d = new Date(input);
+      if (isNaN(d.getTime())) return undefined;
+      d.setHours(12, 0, 0, 0);
+      return d;
+    }
+
     // Content is required only if there are no attachments
     if (!content && (!attachments || attachments.length === 0)) {
       return NextResponse.json(
@@ -399,14 +410,15 @@ export async function PATCH(request, { params }) {
     // If policy is published (active), save changes as pending_changes
     if (policy.status === 'active') {
       const pendingChanges = {
-        title: title.trim(),
+        title: title?.trim(),
         content: content ? content.trim() : '',
         description: description ? description.trim() : '',
-        category: category.trim(),
+        category: category?.trim(),
         tags: parsedTags,
         organization,
         attachments: processedAttachments,
-        effective_date: new Date()
+        department,
+        effective_date: toNoonDate(effective_date)
       };
 
       policy.pending_changes = pendingChanges;
@@ -449,7 +461,9 @@ export async function PATCH(request, { params }) {
         organization,
         attachments: processedAttachments,
         assigned_users: uniqueAssignedUsers,
-        updated_by: user._id
+        updated_by: user._id,
+        department,
+        ...(effective_date ? { effective_date: toNoonDate(effective_date) } : {})
       };
 
       // Include status if provided (only admins can change status)

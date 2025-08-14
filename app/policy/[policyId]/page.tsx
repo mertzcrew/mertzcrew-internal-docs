@@ -3,10 +3,10 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Edit, ArrowLeft, Tag, BookOpen, Users, Building2, Star, Globe, Download, ExternalLink, FileText, Trash2, AlertCircle, CheckCircle, Pin, PinOff } from "lucide-react";
+import { Edit, ArrowLeft, Tag, BookOpen, Users, Building2, Star, Globe, Download, ExternalLink, FileText, Trash2, AlertCircle, CheckCircle, Pin, PinOff, Calendar } from "lucide-react";
 import dynamic from "next/dynamic";
 import "@uiw/react-markdown-preview/markdown.css";
-import { DEPARTMENTS, POLICY_ORGANIZATIONS } from "../../../lib/validations";
+import { DEPARTMENTS, POLICY_ORGANIZATIONS, formatDateMMDDYYYY } from "../../../lib/validations";
 
 const MarkdownPreview = dynamic(() => import("@uiw/react-markdown-preview"), { ssr: false });
 
@@ -90,7 +90,6 @@ export default function PolicyDetailPage() {
   const router = useRouter();
   const params = useParams();
   const policyId = params.policyId as string;
-
   useEffect(() => {
     fetchPolicy();
   }, [policyId]);
@@ -367,7 +366,7 @@ export default function PolicyDetailPage() {
                   <AlertCircle size={20} className="me-2" />
                   <div>
                     <strong>Pending Changes:</strong> This policy has unpublished changes waiting for admin approval.
-                    {policy.publish_date && (
+                    {policy.status === 'active' && (
                       <button
                         className="btn btn-sm btn-outline-secondary ms-3"
                         onClick={() => router.push(`/policy/${policy._id}/current`)}
@@ -443,7 +442,11 @@ export default function PolicyDetailPage() {
                   ></button>
                 </div>
               )}
-
+                <div className="mb-3 text-muted">
+                    <span className="me-3">
+                        <Calendar size={14} className="me-1" /> {formatDateMMDDYYYY(displayPolicy.effective_date)}
+                    </span>
+                </div>
               <div className="mb-3 text-muted">
                 <span className="me-3">
                   <BookOpen size={14} className="me-1" /> {displayPolicy.category}

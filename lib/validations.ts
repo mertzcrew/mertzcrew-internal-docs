@@ -265,6 +265,16 @@ export function formatDate(date: Date | string): string {
     });
 }
 
+export function formatDateMMDDYYYY(input: Date | string | number | null | undefined): string {
+    if (!input) return '';
+    const d = input instanceof Date ? input : new Date(input);
+    if (isNaN(d.getTime())) return '';
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${mm}/${dd}/${yyyy}`;
+}
+
 // Get status badge class
 export function getStatusBadgeClass(status: string): string {
     switch (status) {
