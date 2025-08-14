@@ -56,7 +56,6 @@ function Sidebar() {
           </div>
           <NotificationBell />
         </div>
-        <GlobalSearch />
       </div>
       <Header activeNav={activeNav} setActiveNav={setActiveNav} />
       {/* User Profile */}
