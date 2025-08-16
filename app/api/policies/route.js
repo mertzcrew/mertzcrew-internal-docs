@@ -301,7 +301,7 @@ export async function GET(request) {
       try {
         const activePolicies = await Policy.find({ status: 'active' })
           .populate('created_by', 'first_name last_name email')
-          .sort({ created_at: -1 })
+          .sort({ updatedAt: -1, created_at: -1 }) // Sort by most recent update, then by creation date
           .limit(5);
         
         console.log('API - Dashboard: Active policies count:', activePolicies.length);
