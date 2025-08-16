@@ -33,6 +33,12 @@ export const DEPARTMENTS = [{value: "tech_team", display: "Tech Team Only"},
 ] as const;
 export type Department = typeof DEPARTMENTS[number];
 
+// User departments (excludes "all" option)
+export const USER_DEPARTMENTS = [{value: "tech_team", display: "Tech Team Only"}, 
+    {value: "customer_support", display: "Customer Support Only"}
+] as const;
+export type UserDepartment = typeof USER_DEPARTMENTS[number];
+
 // Policy-related constants
 export const POLICY_STATUSES = ['draft', 'active', 'inactive', 'archived'] as const;
 export type PolicyStatus = typeof POLICY_STATUSES[number];
@@ -162,7 +168,7 @@ export function validatePolicy(data: {
     // Organization validation
     if (!data.organization) {
         errors.organization = 'Organization is required';
-    } else if (!POLICY_ORGANIZATIONS.includes(data.organization as PolicyOrganization)) {
+    } else if (!POLICY_ORGANIZATIONS.some(org => org.value === data.organization)) {
         errors.organization = 'Invalid organization selected';
     }
 
@@ -221,12 +227,14 @@ export function validateUser(data: {
     // Organization validation
     if (!data.organization?.trim()) {
         errors.organization = 'Organization is required';
-    } else if (!ORGANIZATIONS.includes(data.organization as Organization)) {
+    } else if (!ORGANIZATIONS.some(org => org.value === data.organization)) {
         errors.organization = 'Invalid organization selected';
     }
 
     // Department validation
-    if (data.department && !DEPARTMENTS.includes(data.department as Department)) {
+    if (data.organization === 'mertzcrew' && !data.department?.trim()) {
+        errors.department = 'Department is required for Mertzcrew users';
+    } else if (data.department && !DEPARTMENTS.some(dept => dept.value === data.department)) {
         errors.department = 'Invalid department selected';
     }
 

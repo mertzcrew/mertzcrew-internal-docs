@@ -5,7 +5,7 @@ import {
     USER_ROLES, 
     USER_PERMISSIONS, 
     ORGANIZATIONS, 
-    DEPARTMENTS,
+    USER_DEPARTMENTS,
     validateUser,
     isValidEmail,
     isValidPassword
@@ -69,10 +69,19 @@ export default function AddUserForm({ editMode = false, initialData, userId }: A
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [name]: value
+      };
+      
+      // If organization is changed and it's not Mertzcrew, clear the department
+      if (name === 'organization' && value !== 'mertzcrew') {
+        newData.department = '';
+      }
+      
+      return newData;
+    });
   };
 
   const handlePermissionChange = (permission: string) => {
@@ -127,24 +136,17 @@ export default function AddUserForm({ editMode = false, initialData, userId }: A
   };
 
   const isFormValid = () => {
-    if (editMode) {
-      return (
-        formData.email &&
-        formData.first_name &&
-        formData.last_name &&
-        formData.organization &&
-        formData.department
-      );
-    }
-    return (
+    const baseFields = (
       formData.email &&
-      formData.password &&
       formData.first_name &&
       formData.last_name &&
-      formData.organization &&
-      formData.department &&
-      formData.password.length >= 8
+      formData.organization
     );
+    
+    const departmentRequired = formData.organization === 'mertzcrew' ? formData.department : true;
+    const passwordRequired = editMode ? true : (formData.password && formData.password.length >= 8);
+    
+    return baseFields && departmentRequired && passwordRequired;
   };
 
   return (
@@ -251,26 +253,28 @@ export default function AddUserForm({ editMode = false, initialData, userId }: A
             ))}
           </select>
         </div>
-		<div className="col-md-6 mb-3">
-			<label htmlFor="department" className="form-label">
-			Department <span className="text-danger">*</span>
-			</label>
-			<select
-			className="form-select"
-			id="department"
-			name="department"
-			value={formData.department}
-			onChange={handleInputChange}
-			required
-			>
-			<option value="">Select Department</option>
-			{DEPARTMENTS.map(department => (
-				<option key={department.value} value={department.value}>
-				{department.display}
-				</option>
-			))}
-			</select>
-        </div>
+        {formData.organization === 'mertzcrew' && (
+          <div className="col-md-6 mb-3">
+            <label htmlFor="department" className="form-label">
+              Department <span className="text-danger">*</span>
+            </label>
+            <select
+              className="form-select"
+              id="department"
+              name="department"
+              value={formData.department}
+              onChange={handleInputChange}
+              required
+            >
+              <option value="">Select Department</option>
+              {USER_DEPARTMENTS.map(department => (
+                <option key={department.value} value={department.value}>
+                  {department.display}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       <div className="row">
