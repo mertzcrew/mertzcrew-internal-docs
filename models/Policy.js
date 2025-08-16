@@ -33,7 +33,7 @@ const PolicySchema = new mongoose.Schema({
       "HR",
       "Culture",
       "Documentation",
-	    "Process",
+      "Process",
       "Safety",
       "Quality",
       "Other"
@@ -41,7 +41,10 @@ const PolicySchema = new mongoose.Schema({
   },
   pending_changes: { type: Object, default: {} },
 
-  // When the policy is published (or republished), capture the timestamp
+  // New: whether this policy requires an electronic signature when published
+  require_signature: { type: Boolean, default: false },
+
+  // New: when a policy is published (or republished), capture the timestamp
   publish_date: { type: Date, default: null },
 
   version: {
@@ -214,6 +217,9 @@ PolicySchema.methods.publishPendingChanges = function() {
   }
   if (this.pending_changes.tags) {
     this.tags = this.pending_changes.tags;
+  }
+  if (typeof this.pending_changes.require_signature === 'boolean') {
+    this.require_signature = this.pending_changes.require_signature;
   }
 
   // Clear pending changes

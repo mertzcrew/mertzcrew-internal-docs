@@ -38,7 +38,8 @@ export async function POST(request) {
       organization = 'all',
       attachments = [],
       assigned_users = [],
-      isDraft = true
+      isDraft = true,
+      require_signature = false
     } = body;
     
     console.log('API - Extracted attachments:', attachments);
@@ -149,6 +150,7 @@ export async function POST(request) {
       attachments: processedAttachments,
       assigned_users: assignedUsersArray,
       effective_date: body.effective_date || new Date(),
+      require_signature: !!require_signature,
       status: initialStatus,
       publish_date: initialStatus === 'active' ? new Date() : null,
       created_by: user._id,

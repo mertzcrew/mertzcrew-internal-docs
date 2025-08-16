@@ -73,6 +73,11 @@ interface Policy {
     last_name: string;
     email: string;
   };
+  require_signature?: boolean;
+  userSignature?: {
+    name: string;
+    signedAt: string;
+  };
 }
 
 export default function PolicyDetailPage() {
@@ -86,6 +91,10 @@ export default function PolicyDetailPage() {
   const [isPinned, setIsPinned] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [hasTrackedView, setHasTrackedView] = useState(false);
+  const [signatureName, setSignatureName] = useState("");
+  const [signing, setSigning] = useState(false);
+  const [userHasSigned, setUserHasSigned] = useState(false);
+  const [userSignature, setUserSignature] = useState<{ name: string; signedAt: string } | null>(null);
   const { data: session } = useSession();
   const router = useRouter();
   const params = useParams();
@@ -122,6 +131,34 @@ export default function PolicyDetailPage() {
 
     trackView();
   }, [policy, policyId, hasTrackedView]); // Run when policy is loaded
+
+  // Check if user has already signed this policy
+  useEffect(() => {
+    const checkUserSignature = async () => {
+      if (policy && policy.status === 'active' && policy.require_signature && session?.user?.id) {
+        try {
+          const res = await fetch(`/api/policies/${policyId}/signature`, {
+            method: 'GET',
+            credentials: 'include',
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setUserHasSigned(data.hasSigned);
+            if (data.signature) {
+              setUserSignature({
+                name: data.signature.name,
+                signedAt: data.signature.signedAt
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Error checking signature:', error);
+        }
+      }
+    };
+
+    checkUserSignature();
+  }, [policy, policyId, session]);
 
   const fetchPolicy = async () => {
     try {
@@ -288,14 +325,40 @@ export default function PolicyDetailPage() {
     }
   };
 
+  async function handleSignPolicy() {
+    if (!signatureName.trim()) return;
+    try {
+      setSigning(true);
+      const res = await fetch(`/api/policies/${policyId}/signature`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: signatureName })
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        setSubmitMessage({ type: 'success', text: 'Signature recorded' });
+        setSignatureName("");
+        setUserHasSigned(true);
+        setTimeout(() => setSubmitMessage(null), 2000);
+      } else {
+        setSubmitMessage({ type: 'error', text: json.message || 'Failed to record signature' });
+      }
+    } catch (e) {
+      setSubmitMessage({ type: 'error', text: 'Failed to record signature' });
+    } finally {
+      setSigning(false);
+    }
+  }
+
   // Check if user can edit this policy
   const canEdit = policy && (
     session?.user?.role === 'admin' || 
     policy.assigned_users?.some(user => user._id.toString() === session?.user?.id)
   );
 
-  // Check if user can publish (only admins)
-  const canPublish = session?.user?.role === 'admin';
+  // Check if user can publish (admins or policy creators/assigned users for draft policies)
+  const canPublish = session?.user?.role === 'admin' || 
+    (policy?.status === 'draft' && canEdit);
 
   // Check if policy has pending changes
   const hasPendingChanges = policy?.pending_changes && Object.keys(policy.pending_changes).length > 0;
@@ -420,12 +483,40 @@ export default function PolicyDetailPage() {
                     )}
                   </button>
 
+                  {canPublish && policy.status === 'draft' && (
+                    <button
+                      className="btn btn-warning me-2"
+                      onClick={handlePublish}
+                      disabled={isPublishing}
+                    >
+                      {isPublishing ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                          Publishing...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle size={16} className="me-2" />
+                          Publish Policy
+                        </>
+                      )}
+                    </button>
+                  )}
                   {canEdit && (
                     <button
                       className="btn btn-outline-primary"
                       onClick={() => router.push(`/policy/${policy._id}/edit`)}
                     >
                       <Edit size={16} className="me-2" /> Edit
+                    </button>
+                  )}
+                  {session?.user?.role === 'admin' && (
+                    <button
+                      className="btn btn-outline-danger"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      disabled={isDeleting}
+                    >
+                      <Trash2 size={16} className="me-2" /> Delete
                     </button>
                   )}
                 </div>
@@ -617,6 +708,33 @@ export default function PolicyDetailPage() {
                   </div>
                 </div>
               )}
+              {policy.status === 'active' && policy.require_signature && (
+                <div className="mb-4">
+                  <h5>Electronic Signature</h5>
+                  {userHasSigned ? (
+                    <div className="alert alert-success">
+                      <CheckCircle size={16} className="me-2" />
+                      Signed on {userSignature ? new Date(userSignature.signedAt).toLocaleDateString() : new Date().toLocaleDateString()}
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-muted small">Type your full name to acknowledge you have read and agree to this policy.</p>
+                      <div className="input-group" style={{ maxWidth: 420 }}>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder="Full name"
+                          value={signatureName}
+                          onChange={(e) => setSignatureName(e.target.value)}
+                        />
+                        <button className="btn btn-primary" disabled={signing || !signatureName.trim()} onClick={handleSignPolicy}>
+                          {signing ? 'Signing...' : 'Sign'}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
               <div className="d-flex justify-content-end">
                 <button className="btn btn-link" onClick={() => router.back()}>
                   <ArrowLeft size={16} className="me-1" /> Back
@@ -626,6 +744,54 @@ export default function PolicyDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="modal fade show" style={{ display: 'block', zIndex: 1050 }} tabIndex={-1}>
+          <div className="modal-dialog" style={{ zIndex: 1055 }}>
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Confirm Delete</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowDeleteConfirm(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <p>Are you sure you want to delete this policy? This action cannot be undone.</p>
+                <p className="text-muted small">Policy: {policy?.title}</p>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      Deleting...
+                    </>
+                  ) : (
+                    'Delete Policy'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" style={{ zIndex: 1040 }}></div>
+        </div>
+      )}
     </div>
   );
 } 

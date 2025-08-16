@@ -43,6 +43,7 @@ interface PolicyFormProps {
     content?: string;
     status?: string;
     isDraft?: boolean;
+    require_signature?: boolean;
   };
   attachments: PolicyAttachment[];
   onAttachmentsChange: (attachments: PolicyAttachment[]) => void;
@@ -287,6 +288,23 @@ function PolicyForm({
                     </div>
                   </div>
                 )}
+
+                <div className="mb-3 form-check">
+                  <input
+                    type="checkbox"
+                    id="require_signature"
+                    name="require_signature"
+                    className="form-check-input"
+                    checked={!!form.require_signature}
+                    onChange={(e) => handleChange({
+                      target: { name: 'require_signature', value: e.target.checked } as any
+                    } as any)}
+                    disabled={isSubmitting || isPublishing}
+                  />
+                  <label className="form-check-label" htmlFor="require_signature">
+                    Require electronic signature upon publish
+                  </label>
+                </div>
 
                 <div className="mb-3">
                   <label className="form-label fw-semibold">

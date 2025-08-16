@@ -29,12 +29,13 @@ interface PolicyFormValues {
   category: string;
   organization: string;
   department?: string;
-  effective_date?: string;
   description: string;
   tags: string;
   body: string;
   status: string;
   isDraft: boolean;
+  effective_date?: string;
+  require_signature?: boolean;
 }
 
 const today = new Date();
@@ -48,12 +49,13 @@ const initialForm: PolicyFormValues = {
   category: "",
   organization: "",
   department: "",
-  effective_date: todayISO,
   description: "",
   tags: "",
   body: "",
   status: "draft",
   isDraft: true,
+  effective_date: todayISO,
+  require_signature: false,
 };
 
 export default function NewPolicyPage() {
@@ -231,6 +233,7 @@ export default function NewPolicyPage() {
           tags: form.tags,
           status: form.status,
           isDraft: form.isDraft,
+          require_signature: !!form.require_signature,
           assigned_users: selectedUsers.filter(userId => userId !== session?.user?.id), // Exclude current user since API adds them automatically
           attachments: attachments
         };
@@ -247,7 +250,21 @@ export default function NewPolicyPage() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(requestBody),
+          body: JSON.stringify({
+            title: form.title,
+            content: form.body, // WYSIWYG content
+            description: form.description,
+            category: form.category,
+            organization: form.organization,
+            department: form.department || undefined,
+            effective_date: form.effective_date ? new Date(form.effective_date) : undefined,
+            tags: form.tags,
+            status: form.status,
+            isDraft: form.isDraft,
+            require_signature: !!form.require_signature,
+            assigned_users: selectedUsers.filter(userId => userId !== session?.user?.id), // Exclude current user since API adds them automatically
+            attachments: attachments
+          }),
         });
 
         const result = await response.json();
