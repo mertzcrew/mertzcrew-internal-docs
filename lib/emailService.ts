@@ -14,12 +14,12 @@ const transporter = nodemailer.createTransport({
 // Email templates
 export const emailTemplates = {
   policyAssigned: (userName: string, policyTitle: string, policyUrl: string) => ({
-    subject: 'New Policy Assignment',
+    subject: 'Mertz Control Room - New Policy Assignment',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #333;">Policy Assignment Notification</h2>
         <p>Hello ${userName},</p>
-        <p>A new policy has been assigned to you:</p>
+        <p>A new policy has been assigned to you in the Mertz Control Room:</p>
         <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
           <h3 style="margin-top: 0; color: #555;">${policyTitle}</h3>
           <p style="margin-bottom: 20px;">Please review this policy at your earliest convenience.</p>
@@ -39,7 +39,7 @@ export const emailTemplates = {
       
       Hello ${userName},
       
-      A new policy has been assigned to you: ${policyTitle}
+      A new policy has been assigned to you: ${policyTitle} in the Mertz Control Room
       
       Please review this policy at your earliest convenience.
       
@@ -52,7 +52,7 @@ export const emailTemplates = {
   }),
   
   draftPolicyCreated: (userName: string, policyTitle: string, creatorName: string, policyUrl: string) => ({
-    subject: 'New Draft Policy Created',
+    subject: 'Mertz Control Room - New Draft Policy Created',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #333;">Draft Policy Notification</h2>
@@ -93,7 +93,7 @@ export const emailTemplates = {
   }),
 
   policyReadyForReview: (adminUserName: string, policyTitle: string, fromUserName: string, policyUrl: string) => ({
-    subject: 'Policy Ready for Review and Publishing',
+    subject: 'Mertz Control Room - Policy Ready for Review and Publishing',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #333;">Policy Review Request</h2>
