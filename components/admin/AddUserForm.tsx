@@ -330,7 +330,7 @@ export default function AddUserForm({ editMode = false, initialData, userId }: A
         </div>
       </div> */}
 
-      <div className="mb-3">
+      {/* <div className="mb-3">
         <label className="form-label">Permissions</label>
         <div className="row">
           {USER_PERMISSIONS.map(permission => (
@@ -350,7 +350,7 @@ export default function AddUserForm({ editMode = false, initialData, userId }: A
             </div>
           ))}
         </div>
-      </div>
+      </div> */}
 
       <div className="d-flex gap-2">
         <button

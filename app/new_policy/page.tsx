@@ -311,6 +311,9 @@ export default function NewPolicyPage() {
             : 'Policy created and published successfully!';
           setSubmitMessage({ type: 'success', text: successMessage });
           
+          // Dispatch event to notify sidebar to refresh assigned policies count
+          window.dispatchEvent(new CustomEvent('policyAssignmentChange'));
+          
           // Get the created policy ID from the response
           const policyId = result.data?._id;
           

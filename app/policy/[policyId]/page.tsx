@@ -310,7 +310,7 @@ export default function PolicyDetailPage() {
         },
         body: JSON.stringify({
           action: 'removeAssignedUser',
-          userIdToRemove
+          userIdToRemove: userIdToRemove
         }),
       });
       
@@ -322,6 +322,19 @@ export default function PolicyDetailPage() {
         // Show success message
         setSubmitMessage({ type: 'success', text: 'User removed from policy successfully!' });
         setTimeout(() => setSubmitMessage(null), 3000);
+        
+        // Dispatch event to notify sidebar to refresh assigned policies count
+        window.dispatchEvent(new CustomEvent('policyAssignmentChange'));
+        
+        // If the current user removed themselves, check if they can still access the policy
+        if (userIdToRemove === session?.user?.id) {
+          // Only redirect if user is not admin and policy is not published (draft)
+          // If policy is published, they can still view it
+          // If user is admin, they can still view it
+          if (session?.user?.role !== 'admin' && policy?.status === 'draft') {
+            router.push('/policies');
+          }
+        }
       } else {
         setError(result.message || 'Failed to remove user from policy');
       }
@@ -429,6 +442,9 @@ export default function PolicyDetailPage() {
         // Show success message
         setSubmitMessage({ type: 'success', text: 'Users added to policy successfully!' });
         setTimeout(() => setSubmitMessage(null), 3000);
+        
+        // Dispatch event to notify sidebar to refresh assigned policies count
+        window.dispatchEvent(new CustomEvent('policyAssignmentChange'));
       } else {
         setError(result.message || 'Failed to add users to policy');
       }
@@ -438,6 +454,8 @@ export default function PolicyDetailPage() {
       setAddingUsers(false);
     }
   };
+
+
 
   // Build the displayed policy by overlaying pending_changes on published data
   const displayPolicy = useMemo(() => {

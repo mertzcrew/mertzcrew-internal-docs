@@ -38,6 +38,36 @@ function Sidebar() {
     fetchAssignedPoliciesCount();
   }, [status, session?.user?.id]);
 
+  // Listen for policy assignment changes
+  useEffect(() => {
+    const handlePolicyAssignmentChange = () => {
+      const fetchAssignedPoliciesCount = async () => {
+        if (status === 'authenticated' && session?.user?.id) {
+          try {
+            const response = await fetch('/api/policies?assigned=true', {
+              credentials: 'include',
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              if (data.success) {
+                setAssignedPoliciesCount(data.policies?.length || 0);
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching assigned policies count:', error);
+          }
+        }
+      };
+      fetchAssignedPoliciesCount();
+    };
+
+    window.addEventListener('policyAssignmentChange', handlePolicyAssignmentChange);
+    return () => {
+      window.removeEventListener('policyAssignmentChange', handlePolicyAssignmentChange);
+    };
+  }, [status, session?.user?.id]);
+
   const handleBrandClick = () => {
     if (status === 'authenticated') {
       router.push('/dashboard');
