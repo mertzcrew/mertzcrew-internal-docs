@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from './Header';
 import NotificationBell from '../notifications/NotificationBell';
 import GlobalSearch from '../search/GlobalSearch';
@@ -9,9 +9,34 @@ import { useRouter } from 'next/navigation';
 
 function Sidebar() {
   const [activeNav, setActiveNav] = useState("dashboard");
+  const [assignedPoliciesCount, setAssignedPoliciesCount] = useState(0);
   const { data: session, status } = useSession();
   const router = useRouter();
   const handleSignOut = () => signOut({ callbackUrl: '/' });
+
+  // Fetch assigned policies count
+  useEffect(() => {
+    const fetchAssignedPoliciesCount = async () => {
+      if (status === 'authenticated' && session?.user?.id) {
+        try {
+          const response = await fetch('/api/policies?assigned=true', {
+            credentials: 'include',
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+              setAssignedPoliciesCount(data.policies?.length || 0);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching assigned policies count:', error);
+        }
+      }
+    };
+
+    fetchAssignedPoliciesCount();
+  }, [status, session?.user?.id]);
 
   const handleBrandClick = () => {
     if (status === 'authenticated') {
@@ -57,7 +82,7 @@ function Sidebar() {
           <NotificationBell />
         </div>
       </div>
-      <Header activeNav={activeNav} setActiveNav={setActiveNav} />
+      <Header activeNav={activeNav} setActiveNav={setActiveNav} assignedPoliciesCount={assignedPoliciesCount} />
       {/* User Profile */}
       <div className="mt-auto p-3 border-top">
         <div className="d-flex align-items-center">
@@ -87,7 +112,7 @@ function Sidebar() {
         </div>
 
         {session?.user?.role === 'admin' && (
-          <Header activeNav={activeNav} setActiveNav={setActiveNav} isAdmin={true} />
+          <Header activeNav={activeNav} setActiveNav={setActiveNav} isAdmin={true} assignedPoliciesCount={assignedPoliciesCount} />
         )}
       </div>
     </div>

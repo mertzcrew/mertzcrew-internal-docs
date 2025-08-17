@@ -186,26 +186,50 @@ export default function NewPolicyPage() {
       console.log('Validation - Adding body error');
     }
 
-    // For non-admin users, require at least one admin user to be assigned
-    if (session?.user?.role !== 'admin') {
-      const hasAdminUser = selectedUsers.some(userId => {
-        const user = availableUsers.find(u => u._id === userId);
-        return user?.role === 'admin';
-      });
-      
-      if (!hasAdminUser) {
-        errs.assignedUsers = "You must assign at least one admin user to review this policy";
-      }
-    }
-    
-    // For non-admin users, ensure at least one user is assigned (current user should be automatically included)
-    if (session?.user?.role !== 'admin' && selectedUsers.length === 0) {
-      errs.assignedUsers = "At least one user must be assigned to the policy";
-    }
+    // User assignment is optional for all users (no validation required)
     
     console.log('Validation - errors:', errs);
     return errs;
   }
+
+  // Function to scroll to the first error field
+  const scrollToFirstError = (errorKeys: string[]) => {
+    if (errorKeys.length === 0) return;
+    
+    // Try to find the first error field by its name
+    const firstErrorKey = errorKeys[0];
+    let errorElement = document.querySelector(`[name="${firstErrorKey}"]`) as HTMLElement;
+    
+    // Special handling for assignedUsers error (UserAssignmentInput component)
+    if (firstErrorKey === 'assignedUsers') {
+      // Look for the UserAssignmentInput component or its error message
+      errorElement = document.querySelector('.invalid-feedback.d-block') as HTMLElement;
+      if (!errorElement) {
+        // If no error message found, look for the UserAssignmentInput container
+        errorElement = document.querySelector('.mb-3') as HTMLElement;
+      }
+    }
+    
+    if (errorElement) {
+      // Scroll to the error field with some offset
+      errorElement.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      });
+      // Focus the field if it's an input element
+      if (errorElement.tagName === 'INPUT' || errorElement.tagName === 'SELECT' || errorElement.tagName === 'TEXTAREA') {
+        errorElement.focus();
+      }
+    } else {
+      // If we can't find the specific field, scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  // Function to scroll to top of page
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -216,6 +240,15 @@ export default function NewPolicyPage() {
     
     const errs = validate(form);
     setErrors(errs);
+    
+    // If there are validation errors, scroll to the first error field
+    if (Object.keys(errs).length > 0) {
+      // Small delay to ensure error messages are rendered
+      setTimeout(() => {
+        scrollToFirstError(Object.keys(errs));
+      }, 100);
+      return;
+    }
     
     if (Object.keys(errs).length === 0) {
       setIsSubmitting(true);
@@ -302,6 +335,10 @@ export default function NewPolicyPage() {
             type: 'error', 
             text: result.message || 'Failed to create policy' 
           });
+          // Scroll to top when there's a backend error (with small delay to ensure message is rendered)
+          setTimeout(() => {
+            scrollToTop();
+          }, 100);
         }
       } catch (error) {
         console.error('Error creating policy:', error);
@@ -309,6 +346,10 @@ export default function NewPolicyPage() {
           type: 'error', 
           text: 'An error occurred while creating the policy' 
         });
+        // Scroll to top when there's a network/other error (with small delay to ensure message is rendered)
+        setTimeout(() => {
+          scrollToTop();
+        }, 100);
       } finally {
         setIsSubmitting(false);
       }

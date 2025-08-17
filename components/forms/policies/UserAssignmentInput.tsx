@@ -96,13 +96,10 @@ export default function UserAssignmentInput({
   return (
     <div className="mb-3">
       <label className="form-label fw-semibold">
-        Assigned Users {!isAdmin && <span className="text-danger">*</span>}
+        Assigned Users
         {!disabled && (
           <span className="text-muted ms-2">
-            {isAdmin 
-              ? "(Optional - you are automatically included)" 
-              : "(You are automatically included. You must add at least one admin for policy review)"
-            }
+            (Optional - you are automatically included)
           </span>
         )}
       </label>

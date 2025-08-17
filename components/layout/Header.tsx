@@ -3,10 +3,16 @@ import { Home, FileText, BookOpen, Users, Building2, Star, Clock, Tag, Share2, U
 import React from 'react'
 import { useRouter } from 'next/navigation';
 
-function Header({ activeNav, setActiveNav, isAdmin }: { activeNav: string, setActiveNav: (id: string) => void, isAdmin?: boolean }) {
+function Header({ activeNav, setActiveNav, isAdmin, assignedPoliciesCount }: { 
+	activeNav: string, 
+	setActiveNav: (id: string) => void, 
+	isAdmin?: boolean,
+	assignedPoliciesCount?: number 
+}) {
 	const router = useRouter();
 	let sidebarItems = [
 		{ id: "dashboard", label: "Dashboard", icon: Home },
+		{ id: "myAssignedPolicies", label: "My Assigned Policies", icon: FileText },
 		// { id: "search", label: "Global Search", icon: Search },
 		// { id: "documents", label: "All Documents", icon: FileText },
 		{ id: "policies", label: "All Policies", icon: BookOpen },
@@ -37,6 +43,7 @@ function Header({ activeNav, setActiveNav, isAdmin }: { activeNav: string, setAc
 				onClick={() => {
 					setActiveNav(item.id);
 					if (item.id === "dashboard") router.push("/dashboard");
+					if (item.id === "myAssignedPolicies") router.push("/my-assigned-policies");
 					if (item.id === "search") router.push("/search");
 					if (item.id === "policies") router.push("/policies");
 					if (item.id === "addUser") router.push("/add-user");
@@ -54,7 +61,12 @@ function Header({ activeNav, setActiveNav, isAdmin }: { activeNav: string, setAc
 				}}
 				>
 				<Icon size={18} className="me-2" />
-				{item.label}
+				<div className="d-flex align-items-center justify-content-between w-100">
+					<span>{item.label}</span>
+					{item.id === "myAssignedPolicies" && assignedPoliciesCount && assignedPoliciesCount > 0 && (
+						<span className="badge bg-primary rounded-pill ms-auto">{assignedPoliciesCount}</span>
+					)}
+				</div>
 				</button>
 			)
 			})}

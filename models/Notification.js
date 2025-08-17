@@ -13,7 +13,7 @@ const NotificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['policy_created', 'policy_updated', 'policy_assigned'],
+    enum: ['policy_created', 'policy_updated', 'policy_assigned', 'policy_ready_for_review'],
     required: [true, 'Notification type is required']
   },
   title: {
@@ -189,6 +189,50 @@ NotificationSchema.statics.createAssignmentNotifications = async function(policy
   }
 };
 
+// Static method to create notifications for policy ready for review
+NotificationSchema.statics.createPolicyReadyForReviewNotifications = async function(policyId, adminIds, assignedBy) {
+  const Policy = mongoose.model('Policy');
+  const User = mongoose.model('User');
+  
+  const policy = await Policy.findById(policyId)
+    .populate('created_by', 'first_name last_name');
+  
+  if (!policy || !adminIds?.length) return;
+
+  // Get the admin users who are being assigned for review
+  const adminUsers = await User.find({ 
+    _id: { $in: adminIds },
+    role: 'admin'
+  });
+  
+  if (adminUsers.length === 0) return;
+  
+  // Get the user who assigned the policy for review
+  const assignedByUser = await User.findById(assignedBy);
+  if (!assignedByUser) return;
+  
+  const notifications = [];
+  const notificationTitle = `Policy Ready for Review: ${policy.title}`;
+  const notificationMessage = `${assignedByUser.first_name} ${assignedByUser.last_name} has assigned you a policy that is ready to be reviewed for publishing.`;
+  
+  // Create notifications for admin users
+  for (const adminUser of adminUsers) {
+    notifications.push({
+      user_id: adminUser._id,
+      policy_id: policy._id,
+      type: 'policy_ready_for_review',
+      title: notificationTitle,
+      message: notificationMessage,
+      is_read: false
+    });
+  }
+  
+  if (notifications.length > 0) {
+    await this.insertMany(notifications);
+    console.log(`Created ${notifications.length} policy ready for review notifications for policy: ${policy.title}`);
+  }
+};
+
 // Static method to mark notification as read
 NotificationSchema.statics.markAsRead = async function(notificationId, userId) {
   return await this.findOneAndUpdate(
@@ -234,5 +278,56 @@ NotificationSchema.statics.deleteAllNotifications = async function(userId) {
   return await this.deleteMany({ user_id: userId });
 };
 
-const Notification = mongoose.models.Notification || mongoose.model('Notification', NotificationSchema);
+// Force model recompilation to ensure new methods are available
+if (mongoose.models.Notification) {
+  delete mongoose.models.Notification;
+}
+const Notification = mongoose.model('Notification', NotificationSchema);
+
+// Ensure the new method is available on the model
+if (!Notification.createPolicyReadyForReviewNotifications) {
+  Notification.createPolicyReadyForReviewNotifications = async function(policyId, adminIds, assignedBy) {
+    const Policy = mongoose.model('Policy');
+    const User = mongoose.model('User');
+    
+    const policy = await Policy.findById(policyId)
+      .populate('created_by', 'first_name last_name');
+    
+    if (!policy || !adminIds?.length) return;
+
+    // Get the admin users who are being assigned for review
+    const adminUsers = await User.find({ 
+      _id: { $in: adminIds },
+      role: 'admin'
+    });
+    
+    if (adminUsers.length === 0) return;
+    
+    // Get the user who assigned the policy for review
+    const assignedByUser = await User.findById(assignedBy);
+    if (!assignedByUser) return;
+    
+    const notifications = [];
+    const notificationTitle = `Policy Ready for Review: ${policy.title}`;
+    const notificationMessage = `${assignedByUser.first_name} ${assignedByUser.last_name} has assigned you a policy that is ready to be reviewed for publishing.`;
+    
+    // Create notifications for admin users
+    for (const adminUser of adminUsers) {
+      notifications.push({
+        user_id: adminUser._id,
+        policy_id: policy._id,
+        type: 'policy_ready_for_review',
+        title: notificationTitle,
+        message: notificationMessage,
+        is_read: false
+      });
+    }
+    
+    if (notifications.length > 0) {
+      await this.insertMany(notifications);
+      console.log(`Created ${notifications.length} policy ready for review notifications for policy: ${policy.title}`);
+    }
+  };
+}
+
 export default Notification; 

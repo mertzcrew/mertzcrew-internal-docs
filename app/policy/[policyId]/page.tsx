@@ -560,23 +560,35 @@ export default function PolicyDetailPage() {
                   </button>
 
                   {canPublish && policy.status === 'draft' && (
-                    <button
-                      className="btn btn-warning me-2"
-                      onClick={handlePublish}
-                      disabled={isPublishing}
-                    >
-                      {isPublishing ? (
-                        <>
-                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                          Publishing...
-                        </>
+                    <>
+                      {session?.user?.role === 'admin' ? (
+                        <button
+                          className="btn btn-warning me-2"
+                          onClick={handlePublish}
+                          disabled={isPublishing}
+                        >
+                          {isPublishing ? (
+                            <>
+                              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                              Publishing...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle size={16} className="me-2" />
+                              Publish Policy
+                            </>
+                          )}
+                        </button>
                       ) : (
-                        <>
+                        <button
+                          className="btn btn-warning me-2"
+                          onClick={() => router.push(`/policy/${policy._id}/assign-to-publish`)}
+                        >
                           <CheckCircle size={16} className="me-2" />
-                          Publish Policy
-                        </>
+                          Ready to Publish
+                        </button>
                       )}
-                    </button>
+                    </>
                   )}
                   {canEdit && (
                     <button

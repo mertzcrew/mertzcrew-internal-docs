@@ -90,6 +90,47 @@ export const emailTemplates = {
       
       This is an automated notification from your policy management system.
     `
+  }),
+
+  policyReadyForReview: (adminUserName: string, policyTitle: string, fromUserName: string, policyUrl: string) => ({
+    subject: 'Policy Ready for Review and Publishing',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Policy Review Request</h2>
+        <p>Hello ${adminUserName},</p>
+        <p><strong>${fromUserName}</strong> has assigned you a policy that is ready to be reviewed for publishing:</p>
+        <div style="background-color: #d1ecf1; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #17a2b8;">
+          <h3 style="margin-top: 0; color: #0c5460;">${policyTitle}</h3>
+          <p style="margin-bottom: 10px; color: #0c5460;"><strong>Assigned by:</strong> ${fromUserName}</p>
+          <p style="margin-bottom: 20px; color: #0c5460;">This policy has been marked as ready for review and publishing. Please review the content and publish it if it meets all requirements.</p>
+          <a href="${policyUrl}" style="background-color: #17a2b8; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+            Review and Publish Policy
+          </a>
+        </div>
+        <p>As an admin, you have the authority to review and publish this policy. Please ensure all content meets organizational standards before publishing.</p>
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+        <p style="color: #666; font-size: 12px;">
+          This is an automated notification from your policy management system.
+        </p>
+      </div>
+    `,
+    text: `
+      Policy Review Request
+      
+      Hello ${adminUserName},
+      
+      ${fromUserName} has assigned you a policy that is ready to be reviewed for publishing: ${policyTitle}
+      
+      Assigned by: ${fromUserName}
+      
+      This policy has been marked as ready for review and publishing. Please review the content and publish it if it meets all requirements.
+      
+      Review and Publish Policy: ${policyUrl}
+      
+      As an admin, you have the authority to review and publish this policy. Please ensure all content meets organizational standards before publishing.
+      
+      This is an automated notification from your policy management system.
+    `
   })
 };
 
@@ -146,6 +187,21 @@ export async function sendDraftPolicyCreatedEmail(
   
   const template = emailTemplates.draftPolicyCreated(userName, policyTitle, creatorName, policyUrl);
   return await sendEmail(userEmail, template.subject, template.html, template.text);
+}
+
+// Specific function for policy ready for review emails
+export async function sendPolicyReadyForReviewEmail(
+  adminEmail: string, 
+  adminUserName: string, 
+  policyTitle: string, 
+  fromUserName: string,
+  policyId: string
+) {
+  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  const policyUrl = `${baseUrl}/policy/${policyId}`;
+  
+  const template = emailTemplates.policyReadyForReview(adminUserName, policyTitle, fromUserName, policyUrl);
+  return await sendEmail(adminEmail, template.subject, template.html, template.text);
 }
 
 // Test email function

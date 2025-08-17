@@ -108,23 +108,7 @@ export async function POST(request) {
       // Non-admin users can only create drafts
       initialStatus = 'draft';
       
-      // For non-admin users, validate that at least one admin is assigned
-      if (assigned_users && assigned_users.length > 0) {
-        const assignedUserObjects = await User.find({ _id: { $in: assigned_users } });
-        const hasAdminUser = assignedUserObjects.some(assignedUser => assignedUser.role === 'admin');
-        
-        if (!hasAdminUser) {
-          return NextResponse.json(
-            { success: false, message: 'Non-admin users must assign at least one admin user for policy review' },
-            { status: 400 }
-          );
-        }
-      } else {
-        return NextResponse.json(
-          { success: false, message: 'Non-admin users must assign at least one admin user for policy review' },
-          { status: 400 }
-        );
-      }
+      // User assignment is optional for all users (no validation required)
     }
 
     // Prepare assigned users array based on user role
@@ -146,7 +130,7 @@ export async function POST(request) {
       // Non-admin users must include themselves and at least one admin
       assignedUsersArray = [user._id];
       
-      // Add the provided assigned users (which should include at least one admin)
+      // Add any additional assigned users if provided
       if (assigned_users && assigned_users.length > 0) {
         assigned_users.forEach(userId => {
           if (!assignedUsersArray.includes(userId)) {
@@ -341,6 +325,51 @@ export async function GET(request) {
         });
       } catch (dbError) {
         console.error('API - Dashboard error:', dbError);
+        return NextResponse.json({
+          success: false,
+          message: 'Database connection error',
+          error: dbError.message
+        });
+      }
+    }
+
+    // Handle assigned policies request
+    const assigned = searchParams.get('assigned');
+    if (assigned === 'true') {
+      // Get session to identify the user
+      const session = await getServerSession(authOptions);
+      if (!session) {
+        return NextResponse.json(
+          { success: false, message: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+
+      // Find the user by email
+      const user = await User.findOne({ email: session.user.email });
+      if (!user) {
+        return NextResponse.json(
+          { success: false, message: 'User not found' },
+          { status: 404 }
+        );
+      }
+
+      try {
+        // Find policies where the user is assigned
+        const assignedPolicies = await Policy.find({ 
+          assigned_users: user._id 
+        })
+        .populate('created_by', 'first_name last_name email')
+        .populate('assigned_users', 'first_name last_name email')
+        .sort({ updatedAt: -1, created_at: -1 });
+
+        console.log('API - Assigned policies count:', assignedPolicies.length);
+        return NextResponse.json({
+          success: true,
+          policies: assignedPolicies
+        });
+      } catch (dbError) {
+        console.error('API - Assigned policies error:', dbError);
         return NextResponse.json({
           success: false,
           message: 'Database connection error',
