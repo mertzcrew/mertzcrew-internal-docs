@@ -105,7 +105,6 @@ NotificationSchema.statics.createPolicyNotification = async function(policyId, t
 NotificationSchema.statics.createDraftPolicyNotification = async function(policyId) {
   const Policy = mongoose.model('Policy');
   const User = mongoose.model('User');
-  console.log('line 108', policyId);
   const policy = await Policy.findById(policyId)
     .populate('created_by', 'first_name last_name email');
   
