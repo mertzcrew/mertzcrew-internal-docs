@@ -178,6 +178,16 @@ export async function POST(request) {
         }
       }
       
+      // Create notifications for draft policies
+      if (policy.status === 'draft') {
+        try {
+          await Notification.createDraftPolicyNotification(policy._id);
+        } catch (notificationError) {
+          console.error('Error creating draft policy notifications:', notificationError);
+          // Don't fail the policy creation if notifications fail
+        }
+      }
+      
       // Create assignment notifications for assigned users (regardless of policy status)
       if (assignedUsersArray && assignedUsersArray.length > 0) {
         try {

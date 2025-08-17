@@ -101,6 +101,36 @@ NotificationSchema.statics.createPolicyNotification = async function(policyId, t
   }
 };
 
+// Static method to create notifications for draft policy creation
+NotificationSchema.statics.createDraftPolicyNotification = async function(policyId) {
+  const Policy = mongoose.model('Policy');
+  const User = mongoose.model('User');
+  console.log('line 108', policyId);
+  const policy = await Policy.findById(policyId)
+    .populate('created_by', 'first_name last_name email');
+  
+  if (!policy || policy.status !== 'draft') return;
+  
+  // Only send email to the creator of the draft policy
+  try {
+    const { sendDraftPolicyCreatedEmail } = await import('../lib/emailService.ts');
+    const creatorName = `${policy.created_by.first_name} ${policy.created_by.last_name}`;
+    const creatorUserName = `${policy.created_by.first_name} ${policy.created_by.last_name}`;
+    
+    await sendDraftPolicyCreatedEmail(
+      policy.created_by.email,
+      creatorUserName,
+      policy.title,
+      creatorName,
+      policy._id.toString()
+    );
+    console.log(`Sent draft policy creation email to creator: ${policy.created_by.email}`);
+  } catch (emailError) {
+    console.error('Error sending draft policy email to creator:', emailError);
+    // Don't fail the policy creation if email fails
+  }
+};
+
 // Static method to create notifications for assigned users
 NotificationSchema.statics.createAssignmentNotifications = async function(policyId, assignedUserIds, updatedBy) {
   const Policy = mongoose.model('Policy');
@@ -139,6 +169,25 @@ NotificationSchema.statics.createAssignmentNotifications = async function(policy
   if (notifications.length > 0) {
     await this.insertMany(notifications);
     console.log(`Created ${notifications.length} assignment notifications for policy: ${policy.title}`);
+    
+    // Send email notifications for assigned users
+    try {
+      const { sendPolicyAssignmentEmail } = await import('../lib/emailService.ts');
+      
+      for (const user of assignedUsers) {
+        const userName = `${user.first_name} ${user.last_name}`;
+        await sendPolicyAssignmentEmail(
+          user.email,
+          userName,
+          policy.title,
+          policy._id.toString()
+        );
+      }
+      console.log(`Sent ${assignedUsers.length} email notifications for policy assignment: ${policy.title}`);
+    } catch (emailError) {
+      console.error('Error sending email notifications:', emailError);
+      // Don't fail the notification creation if emails fail
+    }
   }
 };
 
