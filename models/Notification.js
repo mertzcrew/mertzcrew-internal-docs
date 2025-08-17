@@ -140,14 +140,12 @@ NotificationSchema.statics.createAssignmentNotifications = async function(policy
     .populate('created_by', 'first_name last_name');
   
   if (!policy || !assignedUserIds?.length) return;
-  
+
   // Get the users who are being assigned (excluding the creator/updater)
-  const assignedUsers = await User.find({ 
+  let assignedUsers = await User.find({ 
     _id: { $in: assignedUserIds },
-    isActive: true,
-    _id: { $ne: updatedBy }
   });
-  
+  assignedUsers = assignedUsers.filter(user => user._id.toString() !== updatedBy.toString());
   if (assignedUsers.length === 0) return;
   
   const notifications = [];
@@ -176,6 +174,7 @@ NotificationSchema.statics.createAssignmentNotifications = async function(policy
       
       for (const user of assignedUsers) {
         const userName = `${user.first_name} ${user.last_name}`;
+        console.log(`Sending assignment email to: ${user.email} (${userName})`);
         await sendPolicyAssignmentEmail(
           user.email,
           userName,

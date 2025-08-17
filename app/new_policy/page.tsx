@@ -187,7 +187,7 @@ export default function NewPolicyPage() {
     }
 
     // For non-admin users, require at least one admin user to be assigned
-    if (session?.user?.role !== 'admin' && values.isDraft) {
+    if (session?.user?.role !== 'admin') {
       const hasAdminUser = selectedUsers.some(userId => {
         const user = availableUsers.find(u => u._id === userId);
         return user?.role === 'admin';
@@ -198,8 +198,8 @@ export default function NewPolicyPage() {
       }
     }
     
-    // Ensure at least one user is assigned (current user should be automatically included)
-    if (selectedUsers.length === 0) {
+    // For non-admin users, ensure at least one user is assigned (current user should be automatically included)
+    if (session?.user?.role !== 'admin' && selectedUsers.length === 0) {
       errs.assignedUsers = "At least one user must be assigned to the policy";
     }
     
@@ -344,7 +344,7 @@ export default function NewPolicyPage() {
       handleChange={handleChange}
       handleBodyChange={handleBodyChange}
       onCancel={() => router.push('/dashboard')}
-      // New props for user selection
+      // User assignment props - available for all users but optional
       availableUsers={availableUsers}
       selectedUsers={selectedUsers}
       onUserSelection={handleUserSelection}

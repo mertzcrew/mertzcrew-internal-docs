@@ -127,15 +127,33 @@ export async function POST(request) {
       }
     }
 
-    // Prepare assigned users array - include creator by default
-    const assignedUsersArray = [user._id];
-    if (assigned_users && assigned_users.length > 0) {
-      // Add additional assigned users if provided, avoiding duplicates
-      assigned_users.forEach(userId => {
-        if (!assignedUsersArray.includes(userId)) {
-          assignedUsersArray.push(userId);
-        }
-      });
+    // Prepare assigned users array based on user role
+    let assignedUsersArray = [];
+    
+    if (user.role === 'admin') {
+      // Admin is automatically assigned to their own policy
+      assignedUsersArray = [user._id];
+      
+      // Add any additional assigned users if provided
+      if (assigned_users && assigned_users.length > 0) {
+        assigned_users.forEach(userId => {
+          if (!assignedUsersArray.includes(userId)) {
+            assignedUsersArray.push(userId);
+          }
+        });
+      }
+    } else {
+      // Non-admin users must include themselves and at least one admin
+      assignedUsersArray = [user._id];
+      
+      // Add the provided assigned users (which should include at least one admin)
+      if (assigned_users && assigned_users.length > 0) {
+        assigned_users.forEach(userId => {
+          if (!assignedUsersArray.includes(userId)) {
+            assignedUsersArray.push(userId);
+          }
+        });
+      }
     }
 
     // Create new policy
@@ -188,10 +206,12 @@ export async function POST(request) {
         }
       }
       
-      // Create assignment notifications for assigned users (regardless of policy status)
-      if (assignedUsersArray && assignedUsersArray.length > 0) {
+      // Create assignment notifications for assigned users (excluding the creator)
+      if (assigned_users && assigned_users.length > 0) {
         try {
-          await Notification.createAssignmentNotifications(policy._id, assignedUsersArray, user._id);
+          console.log('API - Creating assignment notifications for:', assigned_users);
+          console.log('API - Creator ID:', user._id);
+          await Notification.createAssignmentNotifications(policy._id, assigned_users, user._id);
         } catch (notificationError) {
           console.error('Error creating assignment notifications:', notificationError);
           // Don't fail the policy creation if notifications fail

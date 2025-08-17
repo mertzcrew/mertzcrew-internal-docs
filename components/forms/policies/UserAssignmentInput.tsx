@@ -17,6 +17,7 @@ interface UserAssignmentInputProps {
   currentUserId?: string;
   disabled?: boolean;
   error?: string;
+  isAdmin?: boolean;
 }
 
 export default function UserAssignmentInput({
@@ -24,7 +25,8 @@ export default function UserAssignmentInput({
   onUsersChange,
   currentUserId,
   disabled = false,
-  error
+  error,
+  isAdmin = false
 }: UserAssignmentInputProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<User[]>([]);
@@ -94,9 +96,14 @@ export default function UserAssignmentInput({
   return (
     <div className="mb-3">
       <label className="form-label fw-semibold">
-        Assigned Users
+        Assigned Users {!isAdmin && <span className="text-danger">*</span>}
         {!disabled && (
-          <span className="text-muted ms-2">(You are automatically included. Search to add others)</span>
+          <span className="text-muted ms-2">
+            {isAdmin 
+              ? "(Optional - you are automatically included)" 
+              : "(You are automatically included. You must add at least one admin for policy review)"
+            }
+          </span>
         )}
       </label>
       

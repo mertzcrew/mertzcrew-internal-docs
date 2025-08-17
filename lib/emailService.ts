@@ -102,7 +102,6 @@ export async function sendEmail(to: string, subject: string, html: string, text?
       return { success: false, message: 'Email service not configured' };
     }
 
-    
     const mailOptions = {
       from: process.env.FROM_EMAIL || 'noreply@yourdomain.com', // You'll need to set this
       to: "edwin@mertzcrew.com",
@@ -110,7 +109,6 @@ export async function sendEmail(to: string, subject: string, html: string, text?
       html,
       text: text || html.replace(/<[^>]*>/g, ''), // Strip HTML tags for text version
     };
-    console.log('line 112', mailOptions);
     const result = await transporter.sendMail(mailOptions);
     console.log('Email sent successfully:', result.messageId);
     return { success: true, messageId: result.messageId };
@@ -147,7 +145,6 @@ export async function sendDraftPolicyCreatedEmail(
   const policyUrl = `${baseUrl}/policy/${policyId}`;
   
   const template = emailTemplates.draftPolicyCreated(userName, policyTitle, creatorName, policyUrl);
-  console.log('line 149', userEmail);
   return await sendEmail(userEmail, template.subject, template.html, template.text);
 }
 

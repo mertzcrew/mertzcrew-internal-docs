@@ -251,6 +251,7 @@ function PolicyForm({
                     currentUserId={currentUserId}
                     disabled={isSubmitting}
                     error={errors.assignedUsers}
+                    isAdmin={isAdmin}
                   />
                 )}
 
