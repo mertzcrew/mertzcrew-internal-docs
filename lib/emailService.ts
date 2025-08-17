@@ -104,7 +104,7 @@ export async function sendEmail(to: string, subject: string, html: string, text?
 
     const mailOptions = {
       from: process.env.FROM_EMAIL || 'noreply@yourdomain.com', // You'll need to set this
-      to: "edwin@mertzcrew.com",
+      to: to,
       subject,
       html,
       text: text || html.replace(/<[^>]*>/g, ''), // Strip HTML tags for text version

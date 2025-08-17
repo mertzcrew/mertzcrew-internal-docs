@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Edit, ArrowLeft, Tag, BookOpen, Users, Building2, Star, Globe, Download, ExternalLink, FileText, Trash2, AlertCircle, CheckCircle, Pin, PinOff, Calendar } from "lucide-react";
+import { Edit, ArrowLeft, Tag, BookOpen, Users, Building2, Star, Globe, Download, ExternalLink, FileText, Trash2, AlertCircle, CheckCircle, Pin, PinOff, Calendar, UserPlus } from "lucide-react";
 import dynamic from "next/dynamic";
 import "@uiw/react-markdown-preview/markdown.css";
 import { DEPARTMENTS, POLICY_ORGANIZATIONS, formatDateMMDDYYYY } from "../../../lib/validations";
@@ -95,6 +95,11 @@ export default function PolicyDetailPage() {
   const [signing, setSigning] = useState(false);
   const [userHasSigned, setUserHasSigned] = useState(false);
   const [userSignature, setUserSignature] = useState<{ name: string; signedAt: string } | null>(null);
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [availableUsers, setAvailableUsers] = useState<Array<{_id: string; first_name: string; last_name: string; email: string}>>([]);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [addingUsers, setAddingUsers] = useState(false);
   const { data: session } = useSession();
   const router = useRouter();
   const params = useParams();
@@ -363,6 +368,77 @@ export default function PolicyDetailPage() {
   // Check if policy has pending changes
   const hasPendingChanges = policy?.pending_changes && Object.keys(policy.pending_changes).length > 0;
 
+  // Fetch available users for assignment
+  const fetchAvailableUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const response = await fetch('/api/users', {
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          // Filter out users who are already assigned to this policy
+          const assignedUserIds = policy?.assigned_users?.map(u => u._id) || [];
+          const availableUsers = data.users.filter((user: any) => !assignedUserIds.includes(user._id));
+          setAvailableUsers(availableUsers);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  // Handle user selection for assignment
+  const handleUserSelection = (userId: string, isSelected: boolean) => {
+    if (isSelected) {
+      setSelectedUsers(prev => [...prev, userId]);
+    } else {
+      setSelectedUsers(prev => prev.filter(id => id !== userId));
+    }
+  };
+
+  // Handle adding users to policy
+  const handleAddUsersToPolicy = async () => {
+    if (selectedUsers.length === 0) return;
+    
+    try {
+      setAddingUsers(true);
+      const response = await fetch(`/api/policies/${policyId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'addAssignedUsers',
+          assigned_users: selectedUsers
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        // Refresh the policy data
+        await fetchPolicy();
+        // Reset the modal state
+        setShowAddUserModal(false);
+        setSelectedUsers([]);
+        // Show success message
+        setSubmitMessage({ type: 'success', text: 'Users added to policy successfully!' });
+        setTimeout(() => setSubmitMessage(null), 3000);
+      } else {
+        setError(result.message || 'Failed to add users to policy');
+      }
+    } catch (err) {
+      setError('An error occurred while adding users to policy');
+    } finally {
+      setAddingUsers(false);
+    }
+  };
+
   // Build the displayed policy by overlaying pending_changes on published data
   const displayPolicy = useMemo(() => {
     if (!policy) return null as any;
@@ -578,10 +654,25 @@ export default function PolicyDetailPage() {
               </div>
 
               {/* Assigned Users */}
-              {policy.assigned_users && policy.assigned_users.length > 0 && (
-                <div className="mb-3">
+              <div className="mb-3">
+                <div className="d-flex justify-content-between align-items-center mb-2">
                   <strong>Assigned Users:</strong>
-                  <div className="mt-2 d-flex flex-wrap gap-2">
+                  {canEdit && (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-primary"
+                      onClick={() => {
+                        fetchAvailableUsers();
+                        setShowAddUserModal(true);
+                      }}
+                    >
+                      <UserPlus size={14} className="me-1" />
+                      Add User
+                    </button>
+                  )}
+                </div>
+                {policy.assigned_users && policy.assigned_users.length > 0 ? (
+                  <div className="d-flex flex-wrap gap-2">
                     {policy.assigned_users.map((user, idx) => (
                       <div key={user._id} className="d-flex align-items-center">
                         <span className="badge bg-info me-2">
@@ -600,8 +691,10 @@ export default function PolicyDetailPage() {
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="text-muted small">No users assigned to this policy.</div>
+                )}
+              </div>
 
               <div className="mb-3">
                 <strong>Description:</strong>
@@ -744,6 +837,94 @@ export default function PolicyDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Add User Modal */}
+      {showAddUserModal && (
+        <div className="modal fade show" style={{ display: 'block', zIndex: 1050 }} tabIndex={-1}>
+          <div className="modal-dialog" style={{ zIndex: 1055 }}>
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Add Users to Policy</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => {
+                    setShowAddUserModal(false);
+                    setSelectedUsers([]);
+                  }}
+                ></button>
+              </div>
+              <div className="modal-body">
+                {loadingUsers ? (
+                  <div className="text-center">
+                    <div className="spinner-border text-primary" role="status">
+                      <span className="visually-hidden">Loading...</span>
+                    </div>
+                    <p className="mt-2">Loading available users...</p>
+                  </div>
+                ) : availableUsers.length === 0 ? (
+                  <p className="text-muted">No users available to assign to this policy.</p>
+                ) : (
+                  <div>
+                    <p className="text-muted small mb-3">Select users to assign to this policy:</p>
+                    <div className="list-group">
+                      {availableUsers.map((user) => (
+                        <div key={user._id} className="list-group-item d-flex justify-content-between align-items-center">
+                          <div>
+                            <div className="fw-semibold">{user.first_name} {user.last_name}</div>
+                            <div className="text-muted small">{user.email}</div>
+                          </div>
+                          <div className="form-check">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              id={`user-${user._id}`}
+                              checked={selectedUsers.includes(user._id)}
+                              onChange={(e) => handleUserSelection(user._id, e.target.checked)}
+                            />
+                            <label className="form-check-label" htmlFor={`user-${user._id}`}>
+                              Select
+                            </label>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setShowAddUserModal(false);
+                    setSelectedUsers([]);
+                  }}
+                  disabled={addingUsers}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleAddUsersToPolicy}
+                  disabled={addingUsers || selectedUsers.length === 0}
+                >
+                  {addingUsers ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      Adding Users...
+                    </>
+                  ) : (
+                    `Add ${selectedUsers.length} User${selectedUsers.length !== 1 ? 's' : ''}`
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" style={{ zIndex: 1040 }}></div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (

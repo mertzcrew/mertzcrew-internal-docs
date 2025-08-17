@@ -351,6 +351,72 @@ export async function PATCH(request, { params }) {
       );
     }
 
+    // Handle add assigned users action
+    if (action === 'addAssignedUsers') {
+      const { assigned_users: newAssignedUsers } = body;
+      
+      if (!newAssignedUsers || !Array.isArray(newAssignedUsers) || newAssignedUsers.length === 0) {
+        return NextResponse.json(
+          { success: false, message: 'Assigned users array is required' },
+          { status: 400 }
+        );
+      }
+
+      // Check if user can modify this policy
+      const canModify = 
+        user.role === 'admin' || 
+        policy.assigned_users.some(assignedUser => assignedUser._id.toString() === user._id.toString());
+
+      if (!canModify) {
+        return NextResponse.json(
+          { success: false, message: 'Insufficient permissions to modify this policy' },
+          { status: 403 }
+        );
+      }
+
+      // Get current assigned user IDs
+      const currentAssignedUserIds = policy.assigned_users.map(user => user._id.toString());
+      
+      // Filter out users who are already assigned
+      const usersToAdd = newAssignedUsers.filter(userId => !currentAssignedUserIds.includes(userId.toString()));
+      
+      if (usersToAdd.length === 0) {
+        return NextResponse.json(
+          { success: false, message: 'All selected users are already assigned to this policy' },
+          { status: 400 }
+        );
+      }
+
+      // Add new users to assigned_users
+      policy.assigned_users = [...policy.assigned_users, ...usersToAdd];
+      policy.updated_by = user._id;
+      await policy.save();
+
+      // Create assignment notifications for newly assigned users
+      if (usersToAdd.length > 0) {
+        try {
+          await Notification.createAssignmentNotifications(policy._id, usersToAdd, user._id);
+        } catch (notificationError) {
+          console.error('Error creating assignment notifications:', notificationError);
+          // Don't fail the user assignment if notifications fail
+        }
+      }
+
+      const updatedPolicy = await Policy.findById(policyId)
+        .populate('created_by', 'first_name last_name email')
+        .populate('updated_by', 'first_name last_name email')
+        .populate('assigned_users', 'first_name last_name email');
+
+      return NextResponse.json(
+        { 
+          success: true, 
+          message: `${usersToAdd.length} user${usersToAdd.length !== 1 ? 's' : ''} added to policy successfully`,
+          data: updatedPolicy
+        },
+        { status: 200 }
+      );
+    }
+
     // Handle regular update
     // Validate required fields
     if (!title || !category || !organization) {
