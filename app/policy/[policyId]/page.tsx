@@ -380,6 +380,9 @@ export default function PolicyDetailPage() {
 
   // Check if policy has pending changes
   const hasPendingChanges = policy?.pending_changes && Object.keys(policy.pending_changes).length > 0;
+  
+  // Check if user can see pending changes (admins or assigned users)
+  const canSeePendingChanges = session?.user?.role === 'admin' || canEdit;
 
   // Fetch available users for assignment
   const fetchAvailableUsers = async () => {
@@ -460,7 +463,7 @@ export default function PolicyDetailPage() {
   // Build the displayed policy by overlaying pending_changes on published data
   const displayPolicy = useMemo(() => {
     if (!policy) return null as any;
-    if (policy.status === 'active' && hasPendingChanges) {
+    if (policy.status === 'active' && hasPendingChanges && canSeePendingChanges) {
       const pc = policy.pending_changes || {};
       return {
         ...policy,
@@ -474,7 +477,7 @@ export default function PolicyDetailPage() {
       } as Policy;
     }
     return policy;
-  }, [policy, hasPendingChanges]);
+  }, [policy, hasPendingChanges, canSeePendingChanges]);
 
   if (loading) {
     return (
@@ -518,7 +521,7 @@ export default function PolicyDetailPage() {
               )}
 
               {/* Pending Changes Alert */}
-              {hasPendingChanges && (
+              {hasPendingChanges && canSeePendingChanges && (
                 <div className="alert alert-warning d-flex align-items-center mb-4" role="alert">
                   <AlertCircle size={20} className="me-2" />
                   <div>
@@ -550,6 +553,22 @@ export default function PolicyDetailPage() {
                         )}
                       </button>
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* Show "View published policy" button for users who can't see pending changes but policy has them */}
+              {hasPendingChanges && !canSeePendingChanges && policy.status === 'active' && (
+                <div className="alert alert-info d-flex align-items-center mb-4" role="alert">
+                  <AlertCircle size={20} className="me-2" />
+                  <div>
+                    <strong>Policy Updated:</strong> This policy has been updated but changes are pending admin approval.
+                    <button
+                      className="btn btn-sm btn-outline-primary ms-3"
+                      onClick={() => router.push(`/policy/${policy._id}/current`)}
+                    >
+                      View current published policy
+                    </button>
                   </div>
                 </div>
               )}
@@ -745,7 +764,7 @@ export default function PolicyDetailPage() {
               </div>
 
               {/* Pending Changes Preview */}
-              {hasPendingChanges && (
+              {hasPendingChanges && canSeePendingChanges && (
                 <div className="mb-4">
                   <h4 className="mb-3 text-warning">
                     <AlertCircle size={20} className="me-2" />

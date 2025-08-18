@@ -333,21 +333,34 @@ function PolicyForm({
                   </button>
                   
                   {isEditMode && onPublishPolicy && (
-                    <button 
-                      type="button" 
-                      className="btn btn-success"
-                      onClick={onPublishPolicy}
-                      disabled={!canPublish || isSubmitting || isPublishing}
-                    >
-                      {isPublishing ? (
-                        <>
-                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                          Publishing...
-                        </>
+                    <>
+                      {isAdmin ? (
+                        <button 
+                          type="button" 
+                          className="btn btn-success"
+                          onClick={onPublishPolicy}
+                          disabled={!canPublish || isSubmitting || isPublishing}
+                        >
+                          {isPublishing ? (
+                            <>
+                              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                              Publishing...
+                            </>
+                          ) : (
+                            'Publish Policy'
+                          )}
+                        </button>
                       ) : (
-                        'Publish Policy'
+                        <button 
+                          type="button" 
+                          className="btn btn-warning"
+                          onClick={() => router.push(`/policy/${policyId}/assign-to-publish`)}
+                          disabled={!canPublish || isSubmitting || isPublishing}
+                        >
+                          Ready to Publish
+                        </button>
                       )}
-                    </button>
+                    </>
                   )}
                   
                   <button 

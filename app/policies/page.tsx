@@ -203,7 +203,11 @@ export default function PoliciesPage() {
   };
 
   const getStatusBadge = (policy: Policy) => {
-    if (policy.pending_changes && Object.keys(policy.pending_changes).length > 0) {
+    // Check if user can see pending changes (admins or assigned users)
+    const canSeePendingChanges = session?.user?.role === 'admin' || 
+      policy.assigned_users?.some(user => user._id.toString() === session?.user?.id);
+    
+    if (policy.pending_changes && Object.keys(policy.pending_changes).length > 0 && canSeePendingChanges) {
       return <span className="badge bg-warning">Pending Changes</span>;
     }
     if (policy.status === 'active') {

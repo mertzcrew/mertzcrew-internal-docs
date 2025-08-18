@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import PolicyForm from "@/components/forms/policies/PolicyForm";
 
 interface PolicyAttachment {
@@ -66,6 +67,7 @@ export default function EditPolicyPage() {
   const router = useRouter();
   const params = useParams();
   const policyId = params.policyId as string;
+  const { data: session } = useSession();
 
   useEffect(() => {
     fetchPolicy();
@@ -309,6 +311,8 @@ export default function EditPolicyPage() {
       isPublishing={isPublishing}
       hasChanges={hasChanges()}
       onCancel={() => router.push(`/policy/${policyId}`)}
+      isAdmin={session?.user?.role === 'admin'}
+      currentUserId={session?.user?.id}
     />
   );
 } 
