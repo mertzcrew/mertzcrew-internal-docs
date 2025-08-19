@@ -209,7 +209,6 @@ export async function PATCH(request, { params }) {
 
       // If policy has pending changes, publish them
       if (policy.pending_changes && Object.keys(policy.pending_changes).length > 0) {
-        console.log('Publishing pending changes');
         await policy.publishPendingChanges();
       }
       

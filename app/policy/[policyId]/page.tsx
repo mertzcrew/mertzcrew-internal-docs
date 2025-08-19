@@ -557,8 +557,8 @@ export default function PolicyDetailPage() {
                 </div>
               )}
 
-              {/* Show "View published policy" button for users who can't see pending changes but policy has them */}
-              {hasPendingChanges && !canSeePendingChanges && policy.status === 'active' && (
+              {/* Show "View published policy" button for users who are assigned but can't see pending changes */}
+              {hasPendingChanges && !canSeePendingChanges && canEdit && policy.status === 'active' && (
                 <div className="alert alert-info d-flex align-items-center mb-4" role="alert">
                   <AlertCircle size={20} className="me-2" />
                   <div>

@@ -188,7 +188,7 @@ PolicySchema.methods.savePendingChanges = function(changes) {
 };
 
 // Instance method to publish pending changes
-PolicySchema.methods.publishPendingChanges = function() {
+PolicySchema.methods.publishPendingChanges = async function() {
   if (!this.pending_changes) {
     throw new Error('No pending changes to publish');
   }
@@ -220,6 +220,9 @@ PolicySchema.methods.publishPendingChanges = function() {
   }
   if (typeof this.pending_changes.require_signature === 'boolean') {
     this.require_signature = this.pending_changes.require_signature;
+  }
+  if (this.pending_changes.attachments) {
+    this.attachments = [...this.pending_changes.attachments];
   }
 
   // Clear pending changes
