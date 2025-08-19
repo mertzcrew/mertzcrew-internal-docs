@@ -28,6 +28,7 @@ interface Policy {
   status: string;
   attachments?: PolicyAttachment[];
   effective_date?: string | Date;
+  pending_changes?: any;
 }
 
 interface PolicyFormValues {
@@ -58,6 +59,8 @@ export default function EditPolicyPage() {
   const [form, setForm] = useState<PolicyFormValues>(initialForm);
   const [originalForm, setOriginalForm] = useState<PolicyFormValues>(initialForm);
   const [attachments, setAttachments] = useState<PolicyAttachment[]>([]);
+  const [originalAttachments, setOriginalAttachments] = useState<PolicyAttachment[]>([]);
+  const [hasPendingChanges, setHasPendingChanges] = useState(false);
   const [errors, setErrors] = useState<{ [k: string]: string }>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -104,6 +107,8 @@ export default function EditPolicyPage() {
         setForm(formData);
         setOriginalForm(formData);
         setAttachments(policy.attachments || []);
+        setOriginalAttachments(policy.attachments || []);
+        setHasPendingChanges(policy.pending_changes && Object.keys(policy.pending_changes).length > 0);
       } else {
         setError(result.message || "Policy not found");
       }
@@ -144,7 +149,9 @@ export default function EditPolicyPage() {
   }
 
   function hasChanges(): boolean {
-    return JSON.stringify(form) !== JSON.stringify(originalForm);
+    const formChanged = JSON.stringify(form) !== JSON.stringify(originalForm);
+    const attachmentsChanged = JSON.stringify(attachments) !== JSON.stringify(originalAttachments);
+    return formChanged || attachmentsChanged || hasPendingChanges;
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -180,8 +187,9 @@ export default function EditPolicyPage() {
 
         if (response.ok) {
           setSubmitMessage({ type: 'success', text: 'Policy updated successfully!' });
-          // Update original form to reflect changes
+          // Update original form and attachments to reflect changes
           setOriginalForm({ ...form });
+          setOriginalAttachments([...attachments]);
           setTimeout(() => {
             setSubmitMessage(null);
             router.push(`/policy/${policyId}`);
