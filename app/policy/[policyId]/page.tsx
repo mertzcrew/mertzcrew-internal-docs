@@ -99,6 +99,9 @@ export default function PolicyDetailPage() {
   const [availableUsers, setAvailableUsers] = useState<Array<{_id: string; first_name: string; last_name: string; email: string}>>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [userPopoverRef, setUserPopoverRef] = useState<HTMLDivElement | null>(null);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userSuggestions, setUserSuggestions] = useState<Array<{_id: string; first_name: string; last_name: string; email: string}>>([]);
+  const [loadingUserSuggestions, setLoadingUserSuggestions] = useState(false);
   const [showAddTagPopover, setShowAddTagPopover] = useState(false);
   const [newTag, setNewTag] = useState('');
   const [addingTag, setAddingTag] = useState(false);
@@ -449,6 +452,8 @@ export default function PolicyDetailPage() {
         // Reset the popover state
         setShowAddUserPopover(false);
         setSelectedUsers([]);
+        setUserSearchQuery('');
+        setUserSuggestions([]);
         // Show success message
         setSubmitMessage({ type: 'success', text: 'Users added to policy successfully!' });
         setTimeout(() => setSubmitMessage(null), 3000);
@@ -581,6 +586,56 @@ export default function PolicyDetailPage() {
     setTagSuggestions([]);
   };
 
+  // Fetch user suggestions based on search query
+  const fetchUserSuggestions = async (query: string) => {
+    if (!query.trim() || query.trim().length < 2) {
+      setUserSuggestions([]);
+      return;
+    }
+
+    try {
+      setLoadingUserSuggestions(true);
+      const response = await fetch(`/api/users?q=${encodeURIComponent(query.trim())}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          // Filter out users that are already assigned to this policy
+          const assignedUserIds = policy?.assigned_users?.map(user => user._id.toString()) || [];
+          const filteredSuggestions = data.users.filter((user: any) => 
+            !assignedUserIds.includes(user._id.toString())
+          );
+          setUserSuggestions(filteredSuggestions);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user suggestions:', error);
+    } finally {
+      setLoadingUserSuggestions(false);
+    }
+  };
+
+  // Handle user search input change with debounced suggestions
+  const handleUserSearchChange = (value: string) => {
+    setUserSearchQuery(value);
+    
+    // Debounce the suggestion fetch
+    const timeoutId = setTimeout(() => {
+      fetchUserSuggestions(value);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  };
+
+  // Handle selecting a user suggestion
+  const handleSelectUserSuggestion = (user: {_id: string; first_name: string; last_name: string; email: string}) => {
+    if (!selectedUsers.includes(user._id)) {
+      setSelectedUsers(prev => [...prev, user._id]);
+    }
+    setUserSearchQuery('');
+    setUserSuggestions([]);
+  };
+
   // Handle clicking outside the tag popover
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -606,6 +661,8 @@ export default function PolicyDetailPage() {
       if (userPopoverRef && !userPopoverRef.contains(event.target as Node)) {
         setShowAddUserPopover(false);
         setSelectedUsers([]);
+        setUserSearchQuery('');
+        setUserSuggestions([]);
       }
     };
 
@@ -875,53 +932,141 @@ export default function PolicyDetailPage() {
                         <div
                           ref={setUserPopoverRef}
                           className="position-absolute top-100 end-0 mt-1 bg-white border rounded shadow-lg"
-                          style={{ zIndex: 1000, minWidth: '350px', maxWidth: '450px' }}
+                          style={{ zIndex: 1000, minWidth: '300px', maxWidth: '400px' }}
                         >
                           <div className="p-3 border-bottom">
-                            <h6 className="mb-0">Add Users to Policy</h6>
+                            <div className="input-group">
+                              <span className="input-group-text">
+                                <Users size={14} />
+                              </span>
+                              <input
+                                type="text"
+                                className="form-control"
+                                placeholder="Search or add user"
+                                value={userSearchQuery}
+                                onChange={(e) => handleUserSearchChange(e.target.value)}
+                                autoFocus
+                              />
+                            </div>
                           </div>
                           
-                          <div className="p-3" style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                            {loadingUsers ? (
-                              <div className="text-center">
-                                <div className="spinner-border spinner-border-sm text-primary" role="status">
-                                  <span className="visually-hidden">Loading...</span>
-                                </div>
-                                <p className="mt-2 small text-muted">Loading available users...</p>
-                              </div>
-                            ) : availableUsers.length === 0 ? (
-                              <p className="text-muted small">No users available to assign to this policy.</p>
-                            ) : (
-                              <div>
-                                <p className="text-muted small mb-3">Select users to assign to this policy:</p>
-                                <div className="list-group list-group-flush">
-                                  {availableUsers.map((user) => (
-                                    <div key={user._id} className="list-group-item d-flex justify-content-between align-items-center p-2">
-                                      <div>
-                                        <div className="fw-semibold small">{user.first_name} {user.last_name}</div>
-                                        <div className="text-muted small">{user.email}</div>
-                                      </div>
-                                      <div className="form-check">
-                                        <input
-                                          className="form-check-input"
-                                          type="checkbox"
-                                          id={`user-${user._id}`}
-                                          checked={selectedUsers.includes(user._id)}
-                                          onChange={(e) => handleUserSelection(user._id, e.target.checked)}
-                                        />
-                                        <label className="form-check-label small" htmlFor={`user-${user._id}`}>
-                                          Select
-                                        </label>
-                                      </div>
+                          {/* User Suggestions */}
+                          {userSuggestions.length > 0 && (
+                            <div className="p-2 border-bottom" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                              <div className="small text-muted mb-2">Available users:</div>
+                              <div className="d-flex flex-column gap-1">
+                                {userSuggestions.map((user, idx) => (
+                                  <div
+                                    key={user._id}
+                                    className="d-flex align-items-center p-2 rounded cursor-pointer"
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => handleSelectUserSuggestion(user)}
+                                    onMouseEnter={(e) => e.currentTarget.classList.add('bg-light')}
+                                    onMouseLeave={(e) => e.currentTarget.classList.remove('bg-light')}
+                                  >
+                                    <div className="flex-grow-1">
+                                      <div className="small fw-semibold">{user.first_name} {user.last_name}</div>
+                                      <div className="small text-muted">{user.email}</div>
                                     </div>
-                                  ))}
-                                </div>
+                                    <span className="badge bg-primary">Add</span>
+                                  </div>
+                                ))}
                               </div>
-                            )}
-                          </div>
+                            </div>
+                          )}
+                          
+                          {/* Selected Users */}
+                          {selectedUsers.length > 0 && (
+                            <div className="p-2 border-bottom">
+                              <div className="small text-muted mb-2">Selected users:</div>
+                              <div className="d-flex flex-wrap gap-1">
+                                {selectedUsers.map((userId) => {
+                                  const user = userSuggestions.find(u => u._id === userId) || 
+                                             availableUsers.find(u => u._id === userId);
+                                  if (!user) return null;
+                                  
+                                  return (
+                                    <span
+                                      key={userId}
+                                      className="badge bg-primary text-white position-relative"
+                                      style={{ paddingRight: '20px' }}
+                                    >
+                                      {user.first_name} {user.last_name}
+                                      <span
+                                        className="position-absolute top-0 end-0 h-100 d-flex align-items-center justify-content-center"
+                                        style={{
+                                          width: '16px',
+                                          fontSize: '10px',
+                                          color: 'white',
+                                          backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                                          borderTopRightRadius: '0.375rem',
+                                          borderBottomRightRadius: '0.375rem'
+                                        }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedUsers(prev => prev.filter(id => id !== userId));
+                                        }}
+                                        onMouseEnter={(e) => {
+                                          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+                                        }}
+                                      >
+                                        ×
+                                      </span>
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Current Assigned Users */}
+                          {policy?.assigned_users && policy.assigned_users.length > 0 && (
+                            <div className="p-2">
+                              <div className="small text-muted mb-2">Current assigned users:</div>
+                              <div className="d-flex flex-wrap gap-1">
+                                {policy.assigned_users.map((user) => (
+                                  <span
+                                    key={user._id}
+                                    className="badge bg-info text-white position-relative"
+                                    style={{ paddingRight: '20px' }}
+                                  >
+                                    {user.first_name} {user.last_name}
+                                    {canEdit && (
+                                      <span
+                                        className="position-absolute top-0 end-0 h-100 d-flex align-items-center justify-content-center"
+                                        style={{
+                                          width: '16px',
+                                          fontSize: '10px',
+                                          color: 'white',
+                                          backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                                          borderTopRightRadius: '0.375rem',
+                                          borderBottomRightRadius: '0.375rem'
+                                        }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleRemoveAssignedUser(user._id);
+                                        }}
+                                        onMouseEnter={(e) => {
+                                          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+                                        }}
+                                      >
+                                        ×
+                                      </span>
+                                    )}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                           
                           {/* Add Button */}
-                          <div className="p-3 border-top">
+                          <div className="p-2 border-top">
                             <button
                               type="button"
                               className="btn btn-primary btn-sm w-100"

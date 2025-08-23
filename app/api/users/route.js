@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../auth/[...nextauth]/route';
 import dbConnect from '../../../components/lib/mongodb';
 import User from '../../../models/User';
 
@@ -117,53 +119,50 @@ export async function POST(request) {
   }
 }
 
-// GET route to fetch all users (optional)
+// GET users with optional search query
 export async function GET(request) {
   try {
     await dbConnect();
-    
-    // Get query parameters
+
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json(
+        { success: false, message: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Get query parameter for filtering
     const { searchParams } = new URL(request.url);
-    const search = searchParams.get('search');
-    const limit = parseInt(searchParams.get('limit')) || 0;
-    
-    let usersQuery = User.find({ isActive: true })
-      .select('-password -emailVerificationToken -emailVerificationExpires -passwordResetToken -passwordResetExpires');
+    const query = searchParams.get('q') || '';
 
-    // Apply search filter if provided
-    if (search && search.trim().length > 0) {
-      const searchRegex = new RegExp(search.trim(), 'i');
-      usersQuery = usersQuery.find({
+    let searchQuery = {};
+
+    // Add text search if query is provided
+    if (query.trim()) {
+      searchQuery = {
         $or: [
-          { first_name: searchRegex },
-          { last_name: searchRegex },
-          { email: searchRegex }
+          { first_name: { $regex: query, $options: 'i' } },
+          { last_name: { $regex: query, $options: 'i' } },
+          { email: { $regex: query, $options: 'i' } }
         ]
-      });
+      };
     }
 
-    // Apply limit if provided
-    if (limit > 0) {
-      usersQuery = usersQuery.limit(limit);
-    }
+    const users = await User.find(searchQuery)
+      .select('first_name last_name email')
+      .sort({ first_name: 1, last_name: 1 })
+      .limit(20);
 
-    const users = await usersQuery.sort({ first_name: 1, last_name: 1 });
-
-    return NextResponse.json(
-      { 
-        success: true, 
-        users: users 
-      },
-      { status: 200 }
-    );
+    return NextResponse.json({
+      success: true,
+      users
+    }, { status: 200 });
 
   } catch (error) {
     console.error('Error fetching users:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        message: 'Internal server error' 
-      },
+      { success: false, message: 'Internal server error' },
       { status: 500 }
     );
   }
