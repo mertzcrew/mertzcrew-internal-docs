@@ -384,14 +384,14 @@ export default function ManageTags() {
                       <td>
                         <div className="btn-group" role="group">
                           <button
-                            className="btn btn-sm btn-outline-primary"
+                            className="btn btn-sm btn-outline-primary btn-no-border"
                             onClick={() => openEditModal(tag)}
                             title="Edit tag"
                           >
                             <Edit size={14} />
                           </button>
                           <button
-                            className="btn btn-sm btn-outline-danger"
+                            className="btn btn-sm btn-outline-danger btn-no-border"
                             onClick={() => handleDeleteTag(tag._id)}
                             disabled={deletingTag === tag._id}
                             title="Delete tag"
