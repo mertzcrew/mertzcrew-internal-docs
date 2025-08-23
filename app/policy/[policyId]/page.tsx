@@ -95,14 +95,16 @@ export default function PolicyDetailPage() {
   const [signing, setSigning] = useState(false);
   const [userHasSigned, setUserHasSigned] = useState(false);
   const [userSignature, setUserSignature] = useState<{ name: string; signedAt: string } | null>(null);
-  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [showAddUserPopover, setShowAddUserPopover] = useState(false);
   const [availableUsers, setAvailableUsers] = useState<Array<{_id: string; first_name: string; last_name: string; email: string}>>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  const [showAddTagModal, setShowAddTagModal] = useState(false);
+  const [userPopoverRef, setUserPopoverRef] = useState<HTMLDivElement | null>(null);
+  const [showAddTagPopover, setShowAddTagPopover] = useState(false);
   const [newTag, setNewTag] = useState('');
   const [addingTag, setAddingTag] = useState(false);
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [tagPopoverRef, setTagPopoverRef] = useState<HTMLDivElement | null>(null);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [addingUsers, setAddingUsers] = useState(false);
   const { data: session } = useSession();
@@ -444,8 +446,8 @@ export default function PolicyDetailPage() {
       if (response.ok) {
         // Refresh the policy data
         await fetchPolicy();
-        // Reset the modal state
-        setShowAddUserModal(false);
+        // Reset the popover state
+        setShowAddUserPopover(false);
         setSelectedUsers([]);
         // Show success message
         setSubmitMessage({ type: 'success', text: 'Users added to policy successfully!' });
@@ -485,8 +487,8 @@ export default function PolicyDetailPage() {
       if (response.ok) {
         // Refresh the policy data
         await fetchPolicy();
-        // Reset the modal state
-        setShowAddTagModal(false);
+        // Reset the popover state
+        setShowAddTagPopover(false);
         setNewTag('');
         setTagSuggestions([]);
         // Show success message
@@ -578,6 +580,43 @@ export default function PolicyDetailPage() {
     setNewTag(suggestion);
     setTagSuggestions([]);
   };
+
+  // Handle clicking outside the tag popover
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (tagPopoverRef && !tagPopoverRef.contains(event.target as Node)) {
+        setShowAddTagPopover(false);
+        setNewTag('');
+        setTagSuggestions([]);
+      }
+    };
+
+    if (showAddTagPopover) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showAddTagPopover, tagPopoverRef]);
+
+  // Handle clicking outside the user popover
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userPopoverRef && !userPopoverRef.contains(event.target as Node)) {
+        setShowAddUserPopover(false);
+        setSelectedUsers([]);
+      }
+    };
+
+    if (showAddUserPopover) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showAddUserPopover, userPopoverRef]);
 
 
 
@@ -815,20 +854,93 @@ export default function PolicyDetailPage() {
 
               {/* Assigned Users */}
               <div className="mb-3">
-                <div className="d-flex justify-content-between align-items-center mb-2">
-                  <strong>Assigned Users:</strong>
+                <div className="d-flex align-items-center mb-2">
+                  <strong className="me-2">Assigned Users:</strong>
                   {canEdit && (
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-primary"
-                      onClick={() => {
-                        fetchAvailableUsers();
-                        setShowAddUserModal(true);
-                      }}
-                    >
-                      <UserPlus size={14} className="me-1" />
-                      Add User
-                    </button>
+                    <div className="position-relative">
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-primary btn-no-border"
+                        onClick={() => {
+                          fetchAvailableUsers();
+                          setShowAddUserPopover(!showAddUserPopover);
+                        }}
+                      >
+                        <UserPlus size={14} className="me-1" />
+                        Add User
+                      </button>
+                      
+                      {/* User Popover */}
+                      {showAddUserPopover && (
+                        <div
+                          ref={setUserPopoverRef}
+                          className="position-absolute top-100 end-0 mt-1 bg-white border rounded shadow-lg"
+                          style={{ zIndex: 1000, minWidth: '350px', maxWidth: '450px' }}
+                        >
+                          <div className="p-3 border-bottom">
+                            <h6 className="mb-0">Add Users to Policy</h6>
+                          </div>
+                          
+                          <div className="p-3" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                            {loadingUsers ? (
+                              <div className="text-center">
+                                <div className="spinner-border spinner-border-sm text-primary" role="status">
+                                  <span className="visually-hidden">Loading...</span>
+                                </div>
+                                <p className="mt-2 small text-muted">Loading available users...</p>
+                              </div>
+                            ) : availableUsers.length === 0 ? (
+                              <p className="text-muted small">No users available to assign to this policy.</p>
+                            ) : (
+                              <div>
+                                <p className="text-muted small mb-3">Select users to assign to this policy:</p>
+                                <div className="list-group list-group-flush">
+                                  {availableUsers.map((user) => (
+                                    <div key={user._id} className="list-group-item d-flex justify-content-between align-items-center p-2">
+                                      <div>
+                                        <div className="fw-semibold small">{user.first_name} {user.last_name}</div>
+                                        <div className="text-muted small">{user.email}</div>
+                                      </div>
+                                      <div className="form-check">
+                                        <input
+                                          className="form-check-input"
+                                          type="checkbox"
+                                          id={`user-${user._id}`}
+                                          checked={selectedUsers.includes(user._id)}
+                                          onChange={(e) => handleUserSelection(user._id, e.target.checked)}
+                                        />
+                                        <label className="form-check-label small" htmlFor={`user-${user._id}`}>
+                                          Select
+                                        </label>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Add Button */}
+                          <div className="p-3 border-top">
+                            <button
+                              type="button"
+                              className="btn btn-primary btn-sm w-100"
+                              onClick={handleAddUsersToPolicy}
+                              disabled={addingUsers || selectedUsers.length === 0}
+                            >
+                              {addingUsers ? (
+                                <>
+                                  <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                                  Adding Users...
+                                </>
+                              ) : (
+                                `Add ${selectedUsers.length} User${selectedUsers.length !== 1 ? 's' : ''}`
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
                 {policy.assigned_users && policy.assigned_users.length > 0 ? (
@@ -873,16 +985,130 @@ export default function PolicyDetailPage() {
 
               {/* Tags */}
               <div className="mb-3">
-                <div className="d-flex justify-content-between align-items-center mb-2">
-                  <strong>Tags:</strong>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-outline-primary"
-                    onClick={() => setShowAddTagModal(true)}
-                  >
-                    <Tag size={14} className="me-1" />
-                    Add Tag
-                  </button>
+                <div className="d-flex align-items-center mb-2">
+                  <strong className="me-2">Tags:</strong>
+                  <div className="position-relative">
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-primary btn-no-border"
+                      onClick={() => setShowAddTagPopover(!showAddTagPopover)}
+                    >
+                      <Tag size={14} className="me-1" />
+                      Add Tag
+                    </button>
+                    
+                    {/* Tag Popover */}
+                    {showAddTagPopover && (
+                      <div
+                        ref={setTagPopoverRef}
+                        className="position-absolute top-100 end-0 mt-1 bg-white border rounded shadow-lg"
+                        style={{ zIndex: 1000, minWidth: '300px', maxWidth: '400px' }}
+                      >
+                        <div className="p-3 border-bottom">
+                          <div className="input-group">
+                            <span className="input-group-text">
+                              <Tag size={14} />
+                            </span>
+                            <input
+                              type="text"
+                              className="form-control"
+                              placeholder="Search or create new tag"
+                              value={newTag}
+                              onChange={(e) => handleTagInputChange(e.target.value)}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleAddTag();
+                                }
+                              }}
+                              autoFocus
+                            />
+                          </div>
+                        </div>
+                        
+                        {/* Tag Suggestions */}
+                        {tagSuggestions.length > 0 && (
+                          <div className="p-2 border-bottom" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                            <div className="small text-muted mb-2">Existing tags:</div>
+                            <div className="d-flex flex-wrap gap-1">
+                              {tagSuggestions.map((suggestion, idx) => (
+                                <span
+                                  key={idx}
+                                  className="badge bg-light text-dark cursor-pointer"
+                                  style={{ cursor: 'pointer' }}
+                                  onClick={() => handleSelectTagSuggestion(suggestion)}
+                                  onMouseEnter={(e) => e.currentTarget.classList.add('bg-secondary', 'text-white')}
+                                  onMouseLeave={(e) => e.currentTarget.classList.remove('bg-secondary', 'text-white')}
+                                >
+                                  {suggestion}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Current Tags */}
+                        {displayPolicy.tags && displayPolicy.tags.length > 0 && (
+                          <div className="p-2">
+                            <div className="small text-muted mb-2">Current tags:</div>
+                            <div className="d-flex flex-wrap gap-1">
+                              {displayPolicy.tags.map((tag: string, idx: number) => (
+                                <span
+                                  key={idx}
+                                  className="badge bg-primary text-white position-relative"
+                                  style={{ paddingRight: '20px' }}
+                                >
+                                  {tag}
+                                  <span
+                                    className="position-absolute top-0 end-0 h-100 d-flex align-items-center justify-content-center"
+                                    style={{
+                                      width: '16px',
+                                      fontSize: '10px',
+                                      color: 'white',
+                                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                                      borderTopRightRadius: '0.375rem',
+                                      borderBottomRightRadius: '0.375rem'
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRemoveTag(tag);
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+                                    }}
+                                  >
+                                    ×
+                                  </span>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Add Button */}
+                        <div className="p-2 border-top">
+                          <button
+                            type="button"
+                            className="btn btn-primary btn-sm w-100"
+                            onClick={handleAddTag}
+                            disabled={addingTag || !newTag.trim()}
+                          >
+                            {addingTag ? (
+                              <>
+                                <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                                Adding...
+                              </>
+                            ) : (
+                              'Add Tag'
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 {displayPolicy.tags && displayPolicy.tags.length > 0 ? (
                   <div className="d-flex flex-wrap gap-2">
@@ -1064,196 +1290,9 @@ export default function PolicyDetailPage() {
         </div>
       </div>
 
-      {/* Add User Modal */}
-      {showAddUserModal && (
-        <div className="modal fade show" style={{ display: 'block', zIndex: 1050 }} tabIndex={-1}>
-          <div className="modal-dialog" style={{ zIndex: 1055 }}>
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Add Users to Policy</h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => {
-                    setShowAddUserModal(false);
-                    setSelectedUsers([]);
-                  }}
-                ></button>
-              </div>
-              <div className="modal-body">
-                {loadingUsers ? (
-                  <div className="text-center">
-                    <div className="spinner-border text-primary" role="status">
-                      <span className="visually-hidden">Loading...</span>
-                    </div>
-                    <p className="mt-2">Loading available users...</p>
-                  </div>
-                ) : availableUsers.length === 0 ? (
-                  <p className="text-muted">No users available to assign to this policy.</p>
-                ) : (
-                  <div>
-                    <p className="text-muted small mb-3">Select users to assign to this policy:</p>
-                    <div className="list-group">
-                      {availableUsers.map((user) => (
-                        <div key={user._id} className="list-group-item d-flex justify-content-between align-items-center">
-                          <div>
-                            <div className="fw-semibold">{user.first_name} {user.last_name}</div>
-                            <div className="text-muted small">{user.email}</div>
-                          </div>
-                          <div className="form-check">
-                            <input
-                              className="form-check-input"
-                              type="checkbox"
-                              id={`user-${user._id}`}
-                              checked={selectedUsers.includes(user._id)}
-                              onChange={(e) => handleUserSelection(user._id, e.target.checked)}
-                            />
-                            <label className="form-check-label" htmlFor={`user-${user._id}`}>
-                              Select
-                            </label>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => {
-                    setShowAddUserModal(false);
-                    setSelectedUsers([]);
-                  }}
-                  disabled={addingUsers}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={handleAddUsersToPolicy}
-                  disabled={addingUsers || selectedUsers.length === 0}
-                >
-                  {addingUsers ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                      Adding Users...
-                    </>
-                  ) : (
-                    `Add ${selectedUsers.length} User${selectedUsers.length !== 1 ? 's' : ''}`
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-          <div className="modal-backdrop fade show" style={{ zIndex: 1040 }}></div>
-        </div>
-      )}
 
-      {/* Add Tag Modal */}
-      {showAddTagModal && (
-        <div className="modal fade show" style={{ display: 'block', zIndex: 1050 }} tabIndex={-1}>
-          <div className="modal-dialog" style={{ zIndex: 1055 }}>
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Add Tag to Policy</h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => {
-                    setShowAddTagModal(false);
-                    setNewTag('');
-                    setTagSuggestions([]);
-                  }}
-                ></button>
-              </div>
-              <div className="modal-body">
-                <div className="mb-3">
-                  <label htmlFor="newTag" className="form-label">Tag Name</label>
-                  <div className="position-relative">
-                    <input
-                      type="text"
-                      className="form-control"
-                      id="newTag"
-                      placeholder="Enter tag name"
-                      value={newTag}
-                      onChange={(e) => handleTagInputChange(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddTag();
-                        }
-                      }}
-                    />
-                    {/* Tag Suggestions Dropdown */}
-                    {tagSuggestions.length > 0 && (
-                      <div className="position-absolute top-100 start-0 w-100 mt-1 bg-white border rounded shadow-sm" style={{ zIndex: 1000, maxHeight: '200px', overflowY: 'auto' }}>
-                        {loadingSuggestions ? (
-                          <div className="p-2 text-center text-muted">
-                            <div className="spinner-border spinner-border-sm me-2" role="status"></div>
-                            Loading suggestions...
-                          </div>
-                        ) : (
-                          tagSuggestions.map((suggestion, idx) => (
-                            <div
-                              key={idx}
-                              className="p-2 border-bottom cursor-pointer hover-bg-light"
-                              onClick={() => handleSelectTagSuggestion(suggestion)}
-                              style={{ cursor: 'pointer' }}
-                              onMouseEnter={(e) => e.currentTarget.classList.add('bg-light')}
-                              onMouseLeave={(e) => e.currentTarget.classList.remove('bg-light')}
-                            >
-                              <Tag size={14} className="me-2 text-muted" />
-                              {suggestion}
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  {tagSuggestions.length > 0 && (
-                    <div className="form-text">
-                      Click on a suggestion to select it, or type a new tag name.
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => {
-                    setShowAddTagModal(false);
-                    setNewTag('');
-                    setTagSuggestions([]);
-                  }}
-                  disabled={addingTag}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={handleAddTag}
-                  disabled={addingTag || !newTag.trim()}
-                >
-                  {addingTag ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                      Adding Tag...
-                    </>
-                  ) : (
-                    'Add Tag'
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-          <div className="modal-backdrop fade show" style={{ zIndex: 1040 }}></div>
-        </div>
-      )}
+
+
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (

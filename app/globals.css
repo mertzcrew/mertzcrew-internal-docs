@@ -140,3 +140,7 @@ body {
     vertical-align: -2px; /* tighten baseline to match text */
     margin-right: 0.25rem; /* ~4px */
 }
+
+.btn-no-border {
+  border: none;
+}
