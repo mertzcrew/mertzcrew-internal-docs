@@ -500,10 +500,12 @@ export default function PolicyDetailPage() {
         setSubmitMessage({ type: 'success', text: 'Tag added successfully!' });
         setTimeout(() => setSubmitMessage(null), 3000);
       } else {
-        setError(result.message || 'Failed to add tag');
+        setSubmitMessage({ type: 'error', text: result.message || 'Failed to add tag' });
+        setTimeout(() => setSubmitMessage(null), 5000);
       }
     } catch (err) {
-      setError('An error occurred while adding tag');
+      setSubmitMessage({ type: 'error', text: 'An error occurred while adding tag' });
+      setTimeout(() => setSubmitMessage(null), 5000);
     } finally {
       setAddingTag(false);
     }
@@ -532,10 +534,12 @@ export default function PolicyDetailPage() {
         setSubmitMessage({ type: 'success', text: 'Tag removed successfully!' });
         setTimeout(() => setSubmitMessage(null), 3000);
       } else {
-        setError(result.message || 'Failed to remove tag');
+        setSubmitMessage({ type: 'error', text: result.message || 'Failed to remove tag' });
+        setTimeout(() => setSubmitMessage(null), 5000);
       }
     } catch (err) {
-      setError('An error occurred while removing tag');
+      setSubmitMessage({ type: 'error', text: 'An error occurred while removing tag' });
+      setTimeout(() => setSubmitMessage(null), 5000);
     }
   };
 
