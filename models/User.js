@@ -140,7 +140,6 @@ const UserSchema = new mongoose.Schema({
 });
 
 // Indexes for better query performance
-UserSchema.index({ email: 1 });
 UserSchema.index({ role: 1, isActive: 1 });
 UserSchema.index({ department: 1 });
 UserSchema.index({ 'preferences.language': 1 });

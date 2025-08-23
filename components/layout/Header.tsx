@@ -27,6 +27,7 @@ function Header({ activeNav, setActiveNav, isAdmin, assignedPoliciesCount }: {
 		sidebarItems = [
 			{ id: "addUser", label: "Add User", icon: UserPlus },
 			{ id: "editUser", label: "Edit User", icon: UserPen },
+			{ id: "manageTags", label: "Manage Tags", icon: Tag },
 			{ id: "sessiontest", label: "Session Test", icon: BookOpenText },
 		]
 	}
@@ -48,6 +49,7 @@ function Header({ activeNav, setActiveNav, isAdmin, assignedPoliciesCount }: {
 					if (item.id === "policies") router.push("/policies");
 					if (item.id === "addUser") router.push("/add-user");
 					if (item.id === "editUser") router.push("/edit-user");
+					if (item.id === "manageTags") router.push("/manage-tags");
 					if (item.id === "sessiontest") router.push("/session-test");
 					if (item.id === "hr") router.push("/policies/HR");
 					if (item.id === "culture") router.push("/policies/Culture");

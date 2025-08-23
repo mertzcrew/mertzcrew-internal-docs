@@ -4,6 +4,7 @@ import { authOptions } from '../../auth/[...nextauth]/route';
 import dbConnect from '../../../../components/lib/mongodb';
 import Policy from '../../../../models/Policy';
 import User from '../../../../models/User';
+import Tag from '../../../../models/Tag';
 import UserPinnedPolicy from '../../../../models/UserPinnedPolicy.js';
 import Notification from '../../../../models/Notification.js';
 import DeletedPolicy from '../../../../models/DeletedPolicy.js';
@@ -81,7 +82,8 @@ export async function GET(request, { params }) {
     const policy = await Policy.findById(policyId)
       .populate('created_by', 'first_name last_name email')
       .populate('updated_by', 'first_name last_name email')
-      .populate('assigned_users', 'first_name last_name email');
+      .populate('assigned_users', 'first_name last_name email')
+      .populate('tags', 'name color');
 
     if (!policy) {
       return NextResponse.json(
@@ -352,7 +354,8 @@ export async function PATCH(request, { params }) {
       const updatedPolicy = await Policy.findById(policyId)
         .populate('created_by', 'first_name last_name email')
         .populate('updated_by', 'first_name last_name email')
-        .populate('assigned_users', 'first_name last_name email');
+        .populate('assigned_users', 'first_name last_name email')
+        .populate('tags', 'name color');
 
       return NextResponse.json(
         { 
@@ -418,7 +421,8 @@ export async function PATCH(request, { params }) {
       const updatedPolicy = await Policy.findById(policyId)
         .populate('created_by', 'first_name last_name email')
         .populate('updated_by', 'first_name last_name email')
-        .populate('assigned_users', 'first_name last_name email');
+        .populate('assigned_users', 'first_name last_name email')
+        .populate('tags', 'name color');
 
       return NextResponse.json(
         { 
@@ -441,10 +445,13 @@ export async function PATCH(request, { params }) {
         );
       }
 
-      const trimmedTag = tag.trim();
+      const trimmedTag = tag.trim().toLowerCase();
       
-      // Check if tag already exists
-      if (policy.tags && policy.tags.includes(trimmedTag)) {
+      // Find or create the tag
+      let tagDoc = await Tag.findOrCreate(trimmedTag, user._id);
+      
+      // Check if tag already exists on this policy
+      if (policy.tags && policy.tags.some(tagId => tagId.toString() === tagDoc._id.toString())) {
         return NextResponse.json(
           { success: false, message: 'Tag already exists on this policy' },
           { status: 400 }
@@ -455,14 +462,28 @@ export async function PATCH(request, { params }) {
       if (!policy.tags) {
         policy.tags = [];
       }
-      policy.tags.push(trimmedTag);
-      policy.updated_by = user._id;
-      await policy.save();
+      policy.tags.push(tagDoc._id);
+      
+      // Update policy without changing updatedAt timestamp
+      await Policy.updateOne(
+        { _id: policyId },
+        { 
+          $set: { 
+            tags: policy.tags,
+            updated_by: user._id
+          }
+        },
+        { timestamps: false }
+      );
+
+      // Increment tag usage count
+      await Tag.incrementUsage(tagDoc._id);
 
       const updatedPolicy = await Policy.findById(policyId)
         .populate('created_by', 'first_name last_name email')
         .populate('updated_by', 'first_name last_name email')
-        .populate('assigned_users', 'first_name last_name email');
+        .populate('assigned_users', 'first_name last_name email')
+        .populate('tags', 'name color');
 
       return NextResponse.json(
         { 
@@ -485,8 +506,17 @@ export async function PATCH(request, { params }) {
         );
       }
 
-      // Check if tag exists
-      if (!policy.tags || !policy.tags.includes(tag)) {
+      // Find the tag by name
+      const tagDoc = await Tag.findOne({ name: tag.toLowerCase() });
+      if (!tagDoc) {
+        return NextResponse.json(
+          { success: false, message: 'Tag not found' },
+          { status: 404 }
+        );
+      }
+
+      // Check if tag exists on this policy
+      if (!policy.tags || !policy.tags.some(tagId => tagId.toString() === tagDoc._id.toString())) {
         return NextResponse.json(
           { success: false, message: 'Tag not found on this policy' },
           { status: 404 }
@@ -494,14 +524,28 @@ export async function PATCH(request, { params }) {
       }
 
       // Remove tag from policy
-      policy.tags = policy.tags.filter(t => t !== tag);
-      policy.updated_by = user._id;
-      await policy.save();
+      policy.tags = policy.tags.filter(tagId => tagId.toString() !== tagDoc._id.toString());
+      
+      // Update policy without changing updatedAt timestamp
+      await Policy.updateOne(
+        { _id: policyId },
+        { 
+          $set: { 
+            tags: policy.tags,
+            updated_by: user._id
+          }
+        },
+        { timestamps: false }
+      );
+
+      // Decrement tag usage count
+      await Tag.decrementUsage(tagDoc._id);
 
       const updatedPolicy = await Policy.findById(policyId)
         .populate('created_by', 'first_name last_name email')
         .populate('updated_by', 'first_name last_name email')
-        .populate('assigned_users', 'first_name last_name email');
+        .populate('assigned_users', 'first_name last_name email')
+        .populate('tags', 'name color');
 
       return NextResponse.json(
         { 
@@ -545,8 +589,15 @@ export async function PATCH(request, { params }) {
       );
     }
 
-    // Parse tags if provided
-    const parsedTags = tags ? tags.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
+    // Process tags if provided
+    let processedTags = [];
+    if (tags && tags.trim()) {
+      const tagNames = tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+      for (const tagName of tagNames) {
+        const tagDoc = await Tag.findOrCreate(tagName, user._id);
+        processedTags.push(tagDoc._id);
+      }
+    }
 
     // Process attachments to add uploadedBy field and ensure proper date format
     const processedAttachments = attachments.map(attachment => ({
@@ -576,7 +627,7 @@ export async function PATCH(request, { params }) {
         content: content ? content.trim() : '',
         description: description ? description.trim() : '',
         category: category?.trim(),
-        tags: parsedTags,
+        tags: processedTags,
         organization,
         attachments: processedAttachments,
         department,
@@ -619,7 +670,7 @@ export async function PATCH(request, { params }) {
         content: content ? content.trim() : '',
         description: description ? description.trim() : '',
         category: category.trim(),
-        tags: parsedTags,
+        tags: processedTags,
         organization,
         attachments: processedAttachments,
         assigned_users: uniqueAssignedUsers,
@@ -642,7 +693,8 @@ export async function PATCH(request, { params }) {
         { new: true, runValidators: true }
       ).populate('created_by', 'first_name last_name email')
        .populate('updated_by', 'first_name last_name email')
-       .populate('assigned_users', 'first_name last_name email');
+       .populate('assigned_users', 'first_name last_name email')
+       .populate('tags', 'name color');
        
       console.log('Edit API - Updated policy:', updatedPolicy);
       console.log('Edit API - Updated policy attachments:', updatedPolicy.attachments);

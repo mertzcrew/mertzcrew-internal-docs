@@ -4,6 +4,7 @@ import { authOptions } from '../auth/[...nextauth]/route';
 import dbConnect from '../../../components/lib/mongodb';
 import Policy from '../../../models/Policy';
 import User from '../../../models/User';
+import Tag from '../../../models/Tag';
 import Notification from '../../../models/Notification';
 
 export async function POST(request) {
@@ -88,8 +89,19 @@ export async function POST(request) {
       );
     }
 
-    // Parse tags if provided
-    const parsedTags = tags ? tags.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
+    // Process tags if provided
+    let processedTags = [];
+    if (tags && tags.trim()) {
+      const tagNames = tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+      for (const tagName of tagNames) {
+        const tagDoc = await Tag.findOrCreate(tagName, user._id);
+        processedTags.push(tagDoc._id);
+        // Increment usage count for new tags
+        if (tagDoc.usage_count === 0) {
+          await Tag.incrementUsage(tagDoc._id);
+        }
+      }
+    }
 
     // Process attachments to add uploadedBy field and ensure proper date format
     const processedAttachments = attachments.map(attachment => ({
@@ -146,7 +158,7 @@ export async function POST(request) {
       content: content ? content.trim() : '',
       description: description ? description.trim() : '',
       category: category.trim(),
-      tags: parsedTags,
+      tags: processedTags,
       organization,
       department,
       attachments: processedAttachments,
@@ -315,6 +327,7 @@ export async function GET(request) {
       try {
         const activePolicies = await Policy.find({ status: 'active' })
           .populate('created_by', 'first_name last_name email')
+          .populate('tags', 'name color')
           .sort({ updatedAt: -1, created_at: -1 }) // Sort by most recent update, then by creation date
           .limit(5);
         
@@ -361,6 +374,7 @@ export async function GET(request) {
         })
         .populate('created_by', 'first_name last_name email')
         .populate('assigned_users', 'first_name last_name email')
+        .populate('tags', 'name color')
         .sort({ updatedAt: -1, created_at: -1 });
 
         console.log('API - Assigned policies count:', assignedPolicies.length);
@@ -447,7 +461,8 @@ export async function GET(request) {
     const policies = await policiesQuery
       .populate('created_by', 'first_name last_name email')
       .populate('updated_by', 'first_name last_name email')
-      .populate('assigned_users', 'first_name last_name email');
+      .populate('assigned_users', 'first_name last_name email')
+      .populate('tags', 'name color');
 
     console.log('Policies found:', policies.length);
     console.log('API - All policies in database:', await Policy.countDocuments());

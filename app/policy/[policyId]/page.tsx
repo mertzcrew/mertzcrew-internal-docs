@@ -48,7 +48,11 @@ interface Policy {
   category: string;
   organization: string;
   department?: string;
-  tags: string[];
+  tags: Array<{
+    _id: string;
+    name: string;
+    color: string;
+  }>;
   status: string;
   publish_date?: string | Date;
   pending_changes?: any;
@@ -558,9 +562,9 @@ export default function PolicyDetailPage() {
         const data = await response.json();
         if (data.success) {
           // Filter out tags that are already on this policy
-          const currentTags = displayPolicy?.tags || [];
+          const currentTagNames = displayPolicy?.tags?.map((tag: {_id: string; name: string; color: string}) => tag.name) || [];
           const filteredSuggestions = data.data.filter((tag: string) => 
-            !currentTags.includes(tag)
+            !currentTagNames.includes(tag)
           );
           setTagSuggestions(filteredSuggestions);
         }
@@ -684,19 +688,32 @@ export default function PolicyDetailPage() {
   // Build the displayed policy by overlaying pending_changes on published data
   const displayPolicy = useMemo(() => {
     if (!policy) return null as any;
+    
     if (policy.status === 'active' && hasPendingChanges && canSeePendingChanges) {
       const pc = policy.pending_changes || {};
+      
+      // Handle tags - if pending changes has string tags, use main policy tags
+      let displayTags = policy.tags;
+      if (pc.tags && Array.isArray(pc.tags)) {
+        // Check if pending changes has the new tag object format
+        if (pc.tags.length > 0 && typeof pc.tags[0] === 'object' && pc.tags[0]._id) {
+          displayTags = pc.tags;
+        }
+        // If pending changes has string tags, keep using main policy tags
+      }
+      
       return {
         ...policy,
         title: pc.title ?? policy.title,
         content: pc.content ?? policy.content,
         description: pc.description ?? policy.description,
         category: pc.category ?? policy.category,
-        tags: pc.tags ?? policy.tags,
+        tags: displayTags,
         organization: pc.organization ?? policy.organization,
         attachments: pc.attachments ?? policy.attachments
       } as Policy;
     }
+    
     return policy;
   }, [policy, hasPendingChanges, canSeePendingChanges]);
 
@@ -1201,13 +1218,16 @@ export default function PolicyDetailPage() {
                           <div className="p-2">
                             <div className="small text-muted mb-2">Current tags:</div>
                             <div className="d-flex flex-wrap gap-1">
-                              {displayPolicy.tags.map((tag: string, idx: number) => (
+                              {displayPolicy.tags.map((tag: {_id: string; name: string; color: string}) => (
                                 <span
-                                  key={idx}
-                                  className="badge bg-primary text-white position-relative"
-                                  style={{ paddingRight: '20px' }}
+                                  key={tag._id}
+                                  className="badge text-white position-relative"
+                                  style={{ 
+                                    paddingRight: '20px',
+                                    backgroundColor: tag.color
+                                  }}
                                 >
-                                  {tag}
+                                  {tag.name}
                                   <span
                                     className="position-absolute top-0 end-0 h-100 d-flex align-items-center justify-content-center"
                                     style={{
@@ -1220,7 +1240,7 @@ export default function PolicyDetailPage() {
                                     }}
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleRemoveTag(tag);
+                                      handleRemoveTag(tag.name);
                                     }}
                                     onMouseEnter={(e) => {
                                       e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
@@ -1261,30 +1281,35 @@ export default function PolicyDetailPage() {
                 </div>
                 {displayPolicy.tags && displayPolicy.tags.length > 0 ? (
                   <div className="d-flex flex-wrap gap-2">
-                    {displayPolicy.tags.map((tag: string, idx: number) => (
+                    {displayPolicy.tags.map((tag: {_id: string; name: string; color: string}, idx: number) => (
                       <span
-                        key={idx}
-                        className="badge bg-light text-dark position-relative"
-                        style={{ cursor: 'pointer', paddingRight: '25px' }}
-                        onClick={() => handleRemoveTag(tag)}
+                        key={tag._id}
+                        className="badge position-relative"
+                        style={{ 
+                          cursor: 'pointer', 
+                          paddingRight: '25px',
+                          backgroundColor: tag.color,
+                          color: '#ffffff'
+                        }}
+                        onClick={() => handleRemoveTag(tag.name)}
                         title="Click to remove tag"
                       >
-                        {tag}
+                        {tag.name}
                         <span
                           className="position-absolute top-0 end-0 h-100 d-flex align-items-center justify-content-center"
                           style={{
                             width: '20px',
                             fontSize: '12px',
-                            color: '#dc3545',
-                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                            color: '#ffffff',
+                            backgroundColor: 'rgba(255, 255, 255, 0.2)',
                             borderTopRightRadius: '0.375rem',
                             borderBottomRightRadius: '0.375rem'
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = 'rgba(220, 53, 69, 0.2)';
+                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'rgba(220, 53, 69, 0.1)';
+                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
                           }}
                         >
                           ×

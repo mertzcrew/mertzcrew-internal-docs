@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/route';
 import dbConnect from '../../../components/lib/mongodb';
-import Policy from '../../../models/Policy';
+import Tag from '../../../models/Tag';
 
-// GET all unique tags from policies
+// GET tags with optional search query
 export async function GET(request) {
   try {
     await dbConnect();
@@ -21,31 +21,20 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q') || '';
 
-    // Aggregate to get all unique tags
-    const pipeline = [
-      // Unwind the tags array to get individual tags
-      { $unwind: '$tags' },
-      // Group by tag to get unique tags
-      { $group: { _id: '$tags' } },
-      // Sort alphabetically
-      { $sort: { _id: 1 } },
-      // Project to get just the tag name
-      { $project: { tag: '$_id', _id: 0 } }
-    ];
-
-    // Add text search if query is provided
+    let tags;
+    
     if (query.trim()) {
-      pipeline.unshift({
-        $match: {
-          tags: { $regex: query, $options: 'i' }
-        }
-      });
+      // Use the searchTags static method
+      tags = await Tag.searchTags(query.trim());
+    } else {
+      // Get all active tags sorted by usage count
+      tags = await Tag.find({ is_active: true })
+        .sort({ usage_count: -1, name: 1 })
+        .limit(20);
     }
 
-    const tags = await Policy.aggregate(pipeline);
-
-    // Extract just the tag names
-    const tagNames = tags.map(item => item.tag);
+    // Extract just the tag names for backward compatibility
+    const tagNames = tags.map(tag => tag.name);
 
     return NextResponse.json({
       success: true,

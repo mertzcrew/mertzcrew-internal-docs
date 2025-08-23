@@ -68,8 +68,8 @@ const PolicySchema = new mongoose.Schema({
     type: Date
   },
   tags: [{
-    type: String,
-    trim: true
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tag'
   }],
   organization: { // This is the organization that the policy is for,  all is generic for all organizations
     type: String,

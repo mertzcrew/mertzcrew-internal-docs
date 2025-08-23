@@ -4,6 +4,7 @@ import { authOptions } from '../auth/[...nextauth]/route';
 import dbConnect from '../../../components/lib/mongodb';
 import Policy from '../../../models/Policy';
 import User from '../../../models/User';
+import Tag from '../../../models/Tag';
 
 // GET /api/search - Global search for policies
 export async function GET(request) {
@@ -49,6 +50,13 @@ export async function GET(request) {
 
     const skip = (page - 1) * limit;
 
+    // Find matching tags for the search query
+    const matchingTags = await Tag.find({
+      name: { $regex: query, $options: 'i' }
+    }).select('_id');
+
+    const matchingTagIds = matchingTags.map(tag => tag._id);
+
     // Build search query based on user permissions
     let searchQuery = {};
 
@@ -60,7 +68,7 @@ export async function GET(request) {
           { description: { $regex: query, $options: 'i' } },
           { content: { $regex: query, $options: 'i' } },
           { category: { $regex: query, $options: 'i' } },
-          { tags: { $in: [new RegExp(query, 'i')] } }
+          ...(matchingTagIds.length > 0 ? [{ tags: { $in: matchingTagIds } }] : [])
         ]
       };
     } else {
@@ -75,7 +83,7 @@ export async function GET(request) {
               { description: { $regex: query, $options: 'i' } },
               { content: { $regex: query, $options: 'i' } },
               { category: { $regex: query, $options: 'i' } },
-              { tags: { $in: [new RegExp(query, 'i')] } }
+              ...(matchingTagIds.length > 0 ? [{ tags: { $in: matchingTagIds } }] : [])
             ]
           },
           {
@@ -97,6 +105,7 @@ export async function GET(request) {
       .populate('created_by', 'first_name last_name email')
       .populate('updated_by', 'first_name last_name email')
       .populate('assigned_users', 'first_name last_name email')
+      .populate('tags', 'name color')
       .sort({ updated_at: -1 })
       .skip(skip)
       .limit(limit);

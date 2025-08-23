@@ -12,7 +12,11 @@ interface Policy {
   category: string;
   organization: string;
   status: string;
-  tags: string[];
+  tags: Array<{
+    _id: string;
+    name: string;
+    color: string;
+  }>;
   createdAt: string;
   created_by: {
     first_name: string;
@@ -236,8 +240,12 @@ export default function SearchPage() {
                             <>
                               <Tag size={12} className="text-muted" />
                               {policy.tags.slice(0, 3).map((tag, idx) => (
-                                <span key={idx} className="badge bg-outline-secondary">
-                                  {tag}
+                                <span 
+                                  key={tag._id} 
+                                  className="badge text-white"
+                                  style={{ backgroundColor: tag.color }}
+                                >
+                                  {tag.name}
                                 </span>
                               ))}
                               {policy.tags.length > 3 && (
