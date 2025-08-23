@@ -13,7 +13,7 @@ interface Policy {
   organization: string;
   status: string;
   tags: string[];
-  created_at: string;
+  createdAt: string;
   created_by: {
     first_name: string;
     last_name: string;
@@ -256,7 +256,7 @@ export default function SearchPage() {
                           </span>
                           <span>
                             <Clock size={12} className="me-1" />
-                            {formatDate(policy.created_at)}
+                            {formatDate(policy.createdAt)}
                           </span>
                         </div>
                       </div>

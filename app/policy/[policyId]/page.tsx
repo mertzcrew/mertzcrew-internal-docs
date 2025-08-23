@@ -98,6 +98,11 @@ export default function PolicyDetailPage() {
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [availableUsers, setAvailableUsers] = useState<Array<{_id: string; first_name: string; last_name: string; email: string}>>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [showAddTagModal, setShowAddTagModal] = useState(false);
+  const [newTag, setNewTag] = useState('');
+  const [addingTag, setAddingTag] = useState(false);
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [addingUsers, setAddingUsers] = useState(false);
   const { data: session } = useSession();
@@ -458,6 +463,122 @@ export default function PolicyDetailPage() {
     }
   };
 
+  // Handle adding a tag to the policy
+  const handleAddTag = async () => {
+    if (!newTag.trim()) return;
+    
+    try {
+      setAddingTag(true);
+      const response = await fetch(`/api/policies/${policyId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'addTag',
+          tag: newTag.trim()
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        // Refresh the policy data
+        await fetchPolicy();
+        // Reset the modal state
+        setShowAddTagModal(false);
+        setNewTag('');
+        setTagSuggestions([]);
+        // Show success message
+        setSubmitMessage({ type: 'success', text: 'Tag added successfully!' });
+        setTimeout(() => setSubmitMessage(null), 3000);
+      } else {
+        setError(result.message || 'Failed to add tag');
+      }
+    } catch (err) {
+      setError('An error occurred while adding tag');
+    } finally {
+      setAddingTag(false);
+    }
+  };
+
+  // Handle removing a tag from the policy
+  const handleRemoveTag = async (tagToRemove: string) => {
+    try {
+      const response = await fetch(`/api/policies/${policyId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'removeTag',
+          tag: tagToRemove
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        // Refresh the policy data
+        await fetchPolicy();
+        // Show success message
+        setSubmitMessage({ type: 'success', text: 'Tag removed successfully!' });
+        setTimeout(() => setSubmitMessage(null), 3000);
+      } else {
+        setError(result.message || 'Failed to remove tag');
+      }
+    } catch (err) {
+      setError('An error occurred while removing tag');
+    }
+  };
+
+  // Fetch tag suggestions based on input
+  const fetchTagSuggestions = async (query: string) => {
+    if (!query.trim() || query.trim().length < 2) {
+      setTagSuggestions([]);
+      return;
+    }
+
+    try {
+      setLoadingSuggestions(true);
+      const response = await fetch(`/api/tags?q=${encodeURIComponent(query.trim())}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          // Filter out tags that are already on this policy
+          const currentTags = displayPolicy?.tags || [];
+          const filteredSuggestions = data.data.filter((tag: string) => 
+            !currentTags.includes(tag)
+          );
+          setTagSuggestions(filteredSuggestions);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching tag suggestions:', error);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  // Handle tag input change with debounced suggestions
+  const handleTagInputChange = (value: string) => {
+    setNewTag(value);
+    
+    // Debounce the suggestion fetch
+    const timeoutId = setTimeout(() => {
+      fetchTagSuggestions(value);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  };
+
+  // Handle selecting a tag suggestion
+  const handleSelectTagSuggestion = (suggestion: string) => {
+    setNewTag(suggestion);
+    setTagSuggestions([]);
+  };
+
 
 
   // Build the displayed policy by overlaying pending_changes on published data
@@ -690,16 +811,6 @@ export default function PolicyDetailPage() {
                     {policy.status === 'active' ? 'Published' : 'Draft'}
                   </span>
                 </span>
-                {displayPolicy.tags && displayPolicy.tags.length > 0 && (
-                  <span>
-                    <Tag size={14} className="me-1" />
-                    {displayPolicy.tags.map((tag: string, idx: number) => (
-                      <span key={idx} className="badge bg-light text-dark me-1">
-                        {tag}
-                      </span>
-                    ))}
-                  </span>
-                )}
               </div>
 
               {/* Assigned Users */}
@@ -723,25 +834,91 @@ export default function PolicyDetailPage() {
                 {policy.assigned_users && policy.assigned_users.length > 0 ? (
                   <div className="d-flex flex-wrap gap-2">
                     {policy.assigned_users.map((user, idx) => (
-                      <div key={user._id} className="d-flex align-items-center">
-                        <span className="badge bg-info me-2">
-                          {user.first_name} {user.last_name}
-                        </span>
+                      <span
+                        key={user._id}
+                        className="badge bg-info position-relative"
+                        style={{ cursor: canEdit ? 'pointer' : 'default', paddingRight: canEdit ? '25px' : '8px' }}
+                        onClick={canEdit ? () => handleRemoveAssignedUser(user._id) : undefined}
+                        title={canEdit ? "Click to remove user" : undefined}
+                      >
+                        {user.first_name} {user.last_name}
                         {canEdit && (
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline-danger"
-                            onClick={() => handleRemoveAssignedUser(user._id)}
-                            title="Remove user from policy"
+                          <span
+                            className="position-absolute top-0 end-0 h-100 d-flex align-items-center justify-content-center"
+                            style={{
+                              width: '20px',
+                              fontSize: '12px',
+                              color: '#dc3545',
+                              backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                              borderTopRightRadius: '0.375rem',
+                              borderBottomRightRadius: '0.375rem'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = 'rgba(220, 53, 69, 0.2)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'rgba(220, 53, 69, 0.1)';
+                            }}
                           >
-                            <Trash2 size={12} />
-                          </button>
+                            ×
+                          </span>
                         )}
-                      </div>
+                      </span>
                     ))}
                   </div>
                 ) : (
                   <div className="text-muted small">No users assigned to this policy.</div>
+                )}
+              </div>
+
+              {/* Tags */}
+              <div className="mb-3">
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <strong>Tags:</strong>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-primary"
+                    onClick={() => setShowAddTagModal(true)}
+                  >
+                    <Tag size={14} className="me-1" />
+                    Add Tag
+                  </button>
+                </div>
+                {displayPolicy.tags && displayPolicy.tags.length > 0 ? (
+                  <div className="d-flex flex-wrap gap-2">
+                    {displayPolicy.tags.map((tag: string, idx: number) => (
+                      <span
+                        key={idx}
+                        className="badge bg-light text-dark position-relative"
+                        style={{ cursor: 'pointer', paddingRight: '25px' }}
+                        onClick={() => handleRemoveTag(tag)}
+                        title="Click to remove tag"
+                      >
+                        {tag}
+                        <span
+                          className="position-absolute top-0 end-0 h-100 d-flex align-items-center justify-content-center"
+                          style={{
+                            width: '20px',
+                            fontSize: '12px',
+                            color: '#dc3545',
+                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                            borderTopRightRadius: '0.375rem',
+                            borderBottomRightRadius: '0.375rem'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'rgba(220, 53, 69, 0.2)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'rgba(220, 53, 69, 0.1)';
+                          }}
+                        >
+                          ×
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-muted small">No tags assigned to this policy.</div>
                 )}
               </div>
 
@@ -966,6 +1143,109 @@ export default function PolicyDetailPage() {
                     </>
                   ) : (
                     `Add ${selectedUsers.length} User${selectedUsers.length !== 1 ? 's' : ''}`
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" style={{ zIndex: 1040 }}></div>
+        </div>
+      )}
+
+      {/* Add Tag Modal */}
+      {showAddTagModal && (
+        <div className="modal fade show" style={{ display: 'block', zIndex: 1050 }} tabIndex={-1}>
+          <div className="modal-dialog" style={{ zIndex: 1055 }}>
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Add Tag to Policy</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => {
+                    setShowAddTagModal(false);
+                    setNewTag('');
+                    setTagSuggestions([]);
+                  }}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label htmlFor="newTag" className="form-label">Tag Name</label>
+                  <div className="position-relative">
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="newTag"
+                      placeholder="Enter tag name"
+                      value={newTag}
+                      onChange={(e) => handleTagInputChange(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddTag();
+                        }
+                      }}
+                    />
+                    {/* Tag Suggestions Dropdown */}
+                    {tagSuggestions.length > 0 && (
+                      <div className="position-absolute top-100 start-0 w-100 mt-1 bg-white border rounded shadow-sm" style={{ zIndex: 1000, maxHeight: '200px', overflowY: 'auto' }}>
+                        {loadingSuggestions ? (
+                          <div className="p-2 text-center text-muted">
+                            <div className="spinner-border spinner-border-sm me-2" role="status"></div>
+                            Loading suggestions...
+                          </div>
+                        ) : (
+                          tagSuggestions.map((suggestion, idx) => (
+                            <div
+                              key={idx}
+                              className="p-2 border-bottom cursor-pointer hover-bg-light"
+                              onClick={() => handleSelectTagSuggestion(suggestion)}
+                              style={{ cursor: 'pointer' }}
+                              onMouseEnter={(e) => e.currentTarget.classList.add('bg-light')}
+                              onMouseLeave={(e) => e.currentTarget.classList.remove('bg-light')}
+                            >
+                              <Tag size={14} className="me-2 text-muted" />
+                              {suggestion}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {tagSuggestions.length > 0 && (
+                    <div className="form-text">
+                      Click on a suggestion to select it, or type a new tag name.
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setShowAddTagModal(false);
+                    setNewTag('');
+                    setTagSuggestions([]);
+                  }}
+                  disabled={addingTag}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleAddTag}
+                  disabled={addingTag || !newTag.trim()}
+                >
+                  {addingTag ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      Adding Tag...
+                    </>
+                  ) : (
+                    'Add Tag'
                   )}
                 </button>
               </div>

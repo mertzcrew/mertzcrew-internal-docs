@@ -12,8 +12,8 @@ function Header({ activeNav, setActiveNav, isAdmin, assignedPoliciesCount }: {
 	const router = useRouter();
 	let sidebarItems = [
 		{ id: "dashboard", label: "Dashboard", icon: Home },
+		{ id: "search", label: "Global Search", icon: Search },
 		{ id: "myAssignedPolicies", label: "My Assigned Policies", icon: FileText },
-		// { id: "search", label: "Global Search", icon: Search },
 		// { id: "documents", label: "All Documents", icon: FileText },
 		{ id: "policies", label: "All Policies", icon: BookOpen },
 		{ id: "training", label: "Training", icon: Users },

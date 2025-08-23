@@ -186,7 +186,21 @@ export async function PATCH(request, { params }) {
       user.role === 'admin' || 
       policy.assigned_users.some(assignedUser => assignedUser._id.toString() === user._id.toString());
 
-    if (action !== 'togglePin' && !canEdit) {
+    // Check if user can view this policy (for tag operations)
+    const canView = 
+      user.role === 'admin' || 
+      policy.status === 'active' || 
+      policy.assigned_users.some(assignedUser => assignedUser._id.toString() === user._id.toString());
+
+    // For tag operations, allow any user who can view the policy
+    if (action === 'addTag' || action === 'removeTag') {
+      if (!canView) {
+        return NextResponse.json(
+          { success: false, message: 'Insufficient permissions to modify this policy' },
+          { status: 403 }
+        );
+      }
+    } else if (action !== 'togglePin' && !canEdit) {
       return NextResponse.json(
         { success: false, message: 'Insufficient permissions to edit this policy' },
         { status: 403 }
@@ -410,6 +424,89 @@ export async function PATCH(request, { params }) {
         { 
           success: true, 
           message: `${usersToAdd.length} user${usersToAdd.length !== 1 ? 's' : ''} added to policy successfully`,
+          data: updatedPolicy
+        },
+        { status: 200 }
+      );
+    }
+
+    // Handle add tag action
+    if (action === 'addTag') {
+      const { tag } = body;
+      
+      if (!tag || typeof tag !== 'string' || !tag.trim()) {
+        return NextResponse.json(
+          { success: false, message: 'Tag is required and must be a non-empty string' },
+          { status: 400 }
+        );
+      }
+
+      const trimmedTag = tag.trim();
+      
+      // Check if tag already exists
+      if (policy.tags && policy.tags.includes(trimmedTag)) {
+        return NextResponse.json(
+          { success: false, message: 'Tag already exists on this policy' },
+          { status: 400 }
+        );
+      }
+
+      // Add tag to policy
+      if (!policy.tags) {
+        policy.tags = [];
+      }
+      policy.tags.push(trimmedTag);
+      policy.updated_by = user._id;
+      await policy.save();
+
+      const updatedPolicy = await Policy.findById(policyId)
+        .populate('created_by', 'first_name last_name email')
+        .populate('updated_by', 'first_name last_name email')
+        .populate('assigned_users', 'first_name last_name email');
+
+      return NextResponse.json(
+        { 
+          success: true, 
+          message: 'Tag added successfully',
+          data: updatedPolicy
+        },
+        { status: 200 }
+      );
+    }
+
+    // Handle remove tag action
+    if (action === 'removeTag') {
+      const { tag } = body;
+      
+      if (!tag || typeof tag !== 'string') {
+        return NextResponse.json(
+          { success: false, message: 'Tag is required' },
+          { status: 400 }
+        );
+      }
+
+      // Check if tag exists
+      if (!policy.tags || !policy.tags.includes(tag)) {
+        return NextResponse.json(
+          { success: false, message: 'Tag not found on this policy' },
+          { status: 404 }
+        );
+      }
+
+      // Remove tag from policy
+      policy.tags = policy.tags.filter(t => t !== tag);
+      policy.updated_by = user._id;
+      await policy.save();
+
+      const updatedPolicy = await Policy.findById(policyId)
+        .populate('created_by', 'first_name last_name email')
+        .populate('updated_by', 'first_name last_name email')
+        .populate('assigned_users', 'first_name last_name email');
+
+      return NextResponse.json(
+        { 
+          success: true, 
+          message: 'Tag removed successfully',
           data: updatedPolicy
         },
         { status: 200 }
