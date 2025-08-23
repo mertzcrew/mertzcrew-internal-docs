@@ -125,7 +125,9 @@ function Sidebar() {
           <div className="flex-grow-1">
             <div className="fw-semibold small">{session?.user?.name || 'User'}</div>
             <div className="text-muted small">{session?.user?.email || 'user@mertzcrew.com'}</div>
-            <div className="text-muted small">{session?.user?.role || 'employee'}</div>
+            {session?.user?.role === 'admin' && (
+              <div className="text-muted small">{session?.user?.role}</div>
+            )}
           </div>
           <div className="d-flex gap-1">
             <button className="btn btn-link p-1" title="Settings">
