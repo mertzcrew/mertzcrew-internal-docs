@@ -138,7 +138,11 @@ function Sidebar() {
             )}
           </div>
           <div className="d-flex gap-1">
-            <button className="btn btn-link p-1" title="Settings">
+            <button 
+              className="btn btn-link p-1" 
+              title="Settings"
+              onClick={() => router.push('/settings')}
+            >
               <Settings size={16} className="text-muted" />
             </button>
             <button 
