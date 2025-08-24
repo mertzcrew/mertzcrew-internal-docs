@@ -124,7 +124,15 @@ function Sidebar() {
           </div>
           <div className="flex-grow-1">
             <div className="fw-semibold small">{session?.user?.name || 'User'}</div>
-            <div className="text-muted small">{session?.user?.email || 'user@mertzcrew.com'}</div>
+            <div 
+              className="text-muted small"
+              title={session?.user?.email || 'user@mertzcrew.com'}
+            >
+              {(session?.user?.email || 'user@mertzcrew.com').length > 18 
+                ? `${(session?.user?.email || 'user@mertzcrew.com').substring(0, 18)}...`
+                : (session?.user?.email || 'user@mertzcrew.com')
+              }
+            </div>
             {session?.user?.role === 'admin' && (
               <div className="text-muted small">{session?.user?.role}</div>
             )}

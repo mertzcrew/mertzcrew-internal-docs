@@ -86,9 +86,14 @@ export default function SignIn() {
                   </div>
 
                   <div className="mb-4">
-                    <label htmlFor="password" className="form-label fw-semibold">
-                      Password
-                    </label>
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <label htmlFor="password" className="form-label fw-semibold mb-0">
+                        Password
+                      </label>
+                      <a href="/forgot-password" className="text-decoration-none small">
+                        Forgot Password?
+                      </a>
+                    </div>
                     <div className="position-relative">
                       <input
                         type={showPassword ? 'text' : 'password'}

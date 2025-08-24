@@ -247,8 +247,19 @@ function NotificationBell() {
                           {notification.title}
                         </div>
                       </div>
-                      <div className="text-muted small text-truncate">
-                        {notification.message}
+                      <div 
+                        className="text-muted small"
+                        style={{
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}
+                        title={notification.message}
+                      >
+                        {notification.message.length > 18 
+                          ? `${notification.message.substring(0, 18)}...`
+                          : notification.message
+                        }
                       </div>
                       <div className="text-muted small">
                         {formatDate(notification.created_at)}

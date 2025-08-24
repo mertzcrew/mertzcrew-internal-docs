@@ -131,6 +131,54 @@ export const emailTemplates = {
       
       This is an automated notification from your policy management system.
     `
+  }),
+
+  passwordReset: (userName: string, resetUrl: string) => ({
+    subject: 'Mertz Control Room - Password Reset Request',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Password Reset Request</h2>
+        <p>Hello ${userName},</p>
+        <p>We received a request to reset your password for your Mertz Control Room account.</p>
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #007bff;">
+          <p style="margin-bottom: 20px; color: #495057;">Click the button below to reset your password. This link will expire in 1 hour.</p>
+          <a href="${resetUrl}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+            Reset Password
+          </a>
+        </div>
+        <p style="color: #6c757d; font-size: 14px;">
+          <strong>Important:</strong> If you didn't request this password reset, please ignore this email. 
+          Your password will remain unchanged.
+        </p>
+        <p style="color: #6c757d; font-size: 14px;">
+          For security reasons, this link will expire in 1 hour. If you need to reset your password after that, 
+          please request a new reset link.
+        </p>
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+        <p style="color: #666; font-size: 12px;">
+          This is an automated email from the Mertz Control Room system. Please do not reply to this email.
+        </p>
+      </div>
+    `,
+    text: `
+      Password Reset Request
+      
+      Hello ${userName},
+      
+      We received a request to reset your password for your Mertz Control Room account.
+      
+      Click the link below to reset your password. This link will expire in 1 hour.
+      
+      Reset Password: ${resetUrl}
+      
+      Important: If you didn't request this password reset, please ignore this email. 
+      Your password will remain unchanged.
+      
+      For security reasons, this link will expire in 1 hour. If you need to reset your password after that, 
+      please request a new reset link.
+      
+      This is an automated email from the Mertz Control Room system. Please do not reply to this email.
+    `
   })
 };
 
@@ -202,6 +250,15 @@ export async function sendPolicyReadyForReviewEmail(
   
   const template = emailTemplates.policyReadyForReview(adminUserName, policyTitle, fromUserName, policyUrl);
   return await sendEmail(adminEmail, template.subject, template.html, template.text);
+}
+
+// Password reset email function
+export async function sendPasswordResetEmail(userEmail: string, resetToken: string, userName: string) {
+  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
+  
+  const template = emailTemplates.passwordReset(userName, resetUrl);
+  return await sendEmail(userEmail, template.subject, template.html, template.text);
 }
 
 // Test email function
