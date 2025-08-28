@@ -120,9 +120,13 @@ export default function CurrentPublishedPolicyPage() {
                 {policy.tags && policy.tags.length > 0 && (
                   <span>
                     <Tag size={14} className="me-1" />
-                    {policy.tags.map((tag: string, idx: number) => (
-                      <span key={idx} className="badge bg-light text-dark me-1">
-                        {tag}
+                    {policy.tags.map((tag: {_id: string; name: string; color: string}, idx: number) => (
+                      <span 
+                        key={tag._id} 
+                        className="badge me-1"
+                        style={{ backgroundColor: tag.color, color: '#ffffff' }}
+                      >
+                        {tag.name}
                       </span>
                     ))}
                   </span>

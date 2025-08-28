@@ -21,7 +21,7 @@ export async function GET(request, { params }) {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
 
-    const { policyId } = params;
+    const { policyId } = await params;
     const policy = await Policy.findById(policyId);
     if (!policy) return NextResponse.json({ success: false, message: 'Policy not found' }, { status: 404 });
     if (policy.status !== 'active' || !policy.require_signature) {
@@ -46,7 +46,7 @@ export async function POST(request, { params }) {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
 
-    const { policyId } = params;
+    const { policyId } = await params;
     const { name } = await request.json();
     if (!name || !name.trim()) {
       return NextResponse.json({ success: false, message: 'Name is required' }, { status: 400 });

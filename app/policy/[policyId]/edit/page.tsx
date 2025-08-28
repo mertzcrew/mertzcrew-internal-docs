@@ -24,7 +24,7 @@ interface Policy {
   category: string;
   organization: string;
   department?: string;
-  tags: string[];
+  tags: Array<{_id: string; name: string; color: string}>;
   status: string;
   attachments?: PolicyAttachment[];
   effective_date?: string | Date;
@@ -37,7 +37,7 @@ interface PolicyFormValues {
   organization: string;
   department?: string;
   description: string;
-  tags: string;
+  tags: Array<{_id: string; name: string; color: string}>;
   content: string;
   status: string;
   effective_date?: string;
@@ -49,7 +49,7 @@ const initialForm: PolicyFormValues = {
   organization: "all",
   department: "",
   description: "",
-  tags: "",
+  tags: [],
   content: "",
   status: "draft",
   effective_date: "",
@@ -100,7 +100,7 @@ export default function EditPolicyPage() {
           category: policy.category,
           organization: policy.organization,
           department: (policy as any).department || "",
-          tags: policy.tags ? policy.tags.join(", ") : "",
+          tags: policy.tags || [],
           status: policy.status,
           effective_date: toDateInput(policy.effective_date)
         };
@@ -119,8 +119,13 @@ export default function EditPolicyPage() {
     }
   };
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | { target: { name: string; value: any } }) {
+    if (e.target.name === 'tags') {
+      // Handle tags array
+      setForm({ ...form, tags: e.target.value });
+    } else {
+      setForm({ ...form, [e.target.name]: e.target.value });
+    }
     // Clear error when user starts typing
     if (errors[e.target.name]) {
       setErrors({ ...errors, [e.target.name]: "" });
@@ -164,6 +169,9 @@ export default function EditPolicyPage() {
       setSubmitMessage(null);
       
       try {
+        // Convert tag objects to tag names for API
+        const tagNames = form.tags.map(tag => tag.name).join(', ');
+        
         const response = await fetch(`/api/policies/${policyId}`, {
           method: 'PATCH',
           headers: {
@@ -177,7 +185,7 @@ export default function EditPolicyPage() {
             organization: form.organization,
             department: form.department || undefined,
             effective_date: form.effective_date || undefined,
-            tags: form.tags,
+            tags: tagNames,
             status: form.status,
             attachments: attachments
           }),
@@ -225,6 +233,9 @@ export default function EditPolicyPage() {
     setSubmitMessage(null);
     
     try {
+      // Convert tag objects to tag names for API
+      const tagNames = form.tags.map(tag => tag.name).join(', ');
+      
       // First save changes (so pending_changes or draft is updated)
       const saveRes = await fetch(`/api/policies/${policyId}`, {
         method: 'PATCH',
@@ -237,7 +248,7 @@ export default function EditPolicyPage() {
           organization: form.organization,
           department: form.department || undefined,
           effective_date: form.effective_date || undefined,
-          tags: form.tags,
+          tags: tagNames,
           attachments: attachments
         })
       });
