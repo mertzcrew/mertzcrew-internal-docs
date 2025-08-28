@@ -30,7 +30,7 @@ interface PolicyFormValues {
   organization: string;
   department?: string;
   description: string;
-  tags: string;
+  tags: Array<{_id: string; name: string; color: string}>;
   body: string;
   status: string;
   isDraft: boolean;
@@ -50,7 +50,7 @@ const initialForm: PolicyFormValues = {
   organization: "",
   department: "",
   description: "",
-  tags: "",
+  tags: [],
   body: "",
   status: "draft",
   isDraft: true,
@@ -126,7 +126,7 @@ export default function NewPolicyPage() {
     setAttachments(newAttachments);
   };
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | { target: { name: string; value: any } }) {
     if (e.target.name === "isDraft" && e.target instanceof HTMLInputElement) {
       const isDraft = e.target.checked;
       setForm({ 
@@ -142,6 +142,9 @@ export default function NewPolicyPage() {
         // Clear department when org is not mertzcrew
         department: org === 'mertzcrew' ? form.department : ''
       });
+    } else if (e.target.name === 'tags') {
+      // Handle tags array
+      setForm({ ...form, tags: e.target.value });
     } else {
       setForm({ ...form, [e.target.name]: e.target.value });
     }
@@ -255,6 +258,9 @@ export default function NewPolicyPage() {
       setSubmitMessage(null);
       
       try {
+        // Convert tag objects to tag names for API
+        const tagNames = form.tags.map(tag => tag.name).join(', ');
+        
         const requestBody = {
           title: form.title,
           content: form.body, // WYSIWYG content
@@ -263,7 +269,7 @@ export default function NewPolicyPage() {
           organization: form.organization,
           department: form.department || undefined,
           effective_date: form.effective_date ? new Date(form.effective_date) : undefined,
-          tags: form.tags,
+          tags: tagNames,
           status: form.status,
           isDraft: form.isDraft,
           require_signature: !!form.require_signature,
@@ -291,7 +297,7 @@ export default function NewPolicyPage() {
             organization: form.organization,
             department: form.department || undefined,
             effective_date: form.effective_date ? new Date(form.effective_date) : undefined,
-            tags: form.tags,
+            tags: tagNames,
             status: form.status,
             isDraft: form.isDraft,
             require_signature: !!form.require_signature,

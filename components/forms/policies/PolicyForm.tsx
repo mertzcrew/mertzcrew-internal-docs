@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
+import { Tag } from "lucide-react";
 import "@uiw/react-md-editor/markdown-editor.css";
 import "@uiw/react-markdown-preview/markdown.css";
 import PolicyFileUpload from "../../ui/PolicyFileUpload";
@@ -38,7 +39,7 @@ interface PolicyFormProps {
     department?: string;
     effective_date?: string;
     // description: string;
-    tags: string;
+    tags: Array<{_id: string; name: string; color: string}>;
     body?: string;
     content?: string;
     status?: string;
@@ -97,6 +98,117 @@ function PolicyForm({
   const isEditMode = mode === 'edit';
   const isActiveStatus = originalStatus === 'active';
   const canPublish = !isActiveStatus || (isActiveStatus && hasChanges);
+
+  // Tag-related state
+  const [showAddTagPopover, setShowAddTagPopover] = useState(false);
+  const [newTag, setNewTag] = useState('');
+  const [addingTag, setAddingTag] = useState(false);
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [tagPopoverRef, setTagPopoverRef] = useState<HTMLDivElement | null>(null);
+
+  // Handle click outside to close tag popover
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (tagPopoverRef && !tagPopoverRef.contains(event.target as Node)) {
+        setShowAddTagPopover(false);
+        setNewTag('');
+        setTagSuggestions([]);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [tagPopoverRef]);
+
+  // Handle adding a tag
+  const handleAddTag = async () => {
+    if (!newTag.trim()) return;
+    
+    try {
+      setAddingTag(true);
+      
+      // Check if tag already exists
+      if (form.tags.some(tag => tag.name.toLowerCase() === newTag.trim().toLowerCase())) {
+        setNewTag('');
+        setShowAddTagPopover(false);
+        return;
+      }
+
+      // For now, we'll add the tag locally since this is during form creation
+      // The actual tag creation will happen when the policy is saved
+      const tempTag = {
+        _id: `temp_${Date.now()}`,
+        name: newTag.trim(),
+        color: '#6c757d' // Default gray color
+      };
+      
+      // Update the form tags
+      const updatedTags = [...form.tags, tempTag];
+      handleChange({
+        target: { name: 'tags', value: updatedTags }
+      } as any);
+      
+      setNewTag('');
+      setShowAddTagPopover(false);
+      setTagSuggestions([]);
+    } catch (err) {
+      console.error('Error adding tag:', err);
+    } finally {
+      setAddingTag(false);
+    }
+  };
+
+  // Handle removing a tag
+  const handleRemoveTag = (tagToRemove: string) => {
+    const updatedTags = form.tags.filter(tag => tag.name !== tagToRemove);
+    handleChange({
+      target: { name: 'tags', value: updatedTags }
+    } as any);
+  };
+
+  // Fetch tag suggestions based on input
+  const fetchTagSuggestions = async (query: string) => {
+    if (!query.trim() || query.trim().length < 2) {
+      setTagSuggestions([]);
+      return;
+    }
+
+    try {
+      setLoadingSuggestions(true);
+      const response = await fetch(`/api/tags?q=${encodeURIComponent(query.trim())}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          // Filter out tags that are already on this policy
+          const currentTagNames = form.tags.map(tag => tag.name);
+          const filteredSuggestions = data.data.filter((tag: string) => 
+            !currentTagNames.includes(tag)
+          );
+          setTagSuggestions(filteredSuggestions);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching tag suggestions:', error);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  // Handle tag input change
+  const handleTagInputChange = (value: string) => {
+    setNewTag(value);
+    fetchTagSuggestions(value);
+  };
+
+  // Handle selecting a tag suggestion
+  const handleSelectTagSuggestion = (suggestion: string) => {
+    setNewTag(suggestion);
+    setTagSuggestions([]);
+  };
   
   console.log('=== PolicyForm RENDER ===')
   console.log('Form props:', { attachments: attachments.length, isSubmitting, mode })
@@ -212,15 +324,180 @@ function PolicyForm({
                   {errors.description && <div className="invalid-feedback">{errors.description}</div>}
                 </div> */}
 
+                {/* Tags Section */}
                 <div className="mb-3">
-                  <label className="form-label fw-semibold">Tags (comma separated)</label>
-                  <input
-                    name="tags"
-                    className="form-control"
-                    value={form.tags}
-                    onChange={handleChange}
-                    placeholder="e.g., hr, safety, onboarding"
-                  />
+                  <div className="d-flex align-items-center mb-2">
+                    <label className="form-label fw-semibold mb-0 me-2">Tags:</label>
+                    <div className="position-relative">
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-primary btn-no-border"
+                        onClick={() => setShowAddTagPopover(!showAddTagPopover)}
+                        disabled={isSubmitting || isPublishing}
+                      >
+                        <Tag size={14} className="me-1" />
+                        Add Tag
+                      </button>
+                      
+                      {/* Tag Popover */}
+                      {showAddTagPopover && (
+                        <div
+                          ref={setTagPopoverRef}
+                          className="position-absolute top-100 end-0 mt-1 bg-white border rounded shadow-lg"
+                          style={{ zIndex: 1000, minWidth: '300px', maxWidth: '400px' }}
+                        >
+                          <div className="p-3 border-bottom">
+                            <div className="input-group">
+                              <span className="input-group-text">
+                                <Tag size={14} />
+                              </span>
+                              <input
+                                type="text"
+                                className="form-control"
+                                placeholder="Search or create new tag"
+                                value={newTag}
+                                onChange={(e) => handleTagInputChange(e.target.value)}
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleAddTag();
+                                  }
+                                }}
+                                autoFocus
+                              />
+                            </div>
+                          </div>
+                          
+                          {/* Tag Suggestions */}
+                          {tagSuggestions.length > 0 && (
+                            <div className="p-2 border-bottom" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                              <div className="small text-muted mb-2">Existing tags:</div>
+                              <div className="d-flex flex-wrap gap-1">
+                                {tagSuggestions.map((suggestion, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="badge bg-light text-dark cursor-pointer"
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => handleSelectTagSuggestion(suggestion)}
+                                    onMouseEnter={(e) => e.currentTarget.classList.add('bg-secondary', 'text-white')}
+                                    onMouseLeave={(e) => e.currentTarget.classList.remove('bg-secondary', 'text-white')}
+                                  >
+                                    {suggestion}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Current Tags */}
+                          {form.tags && form.tags.length > 0 && (
+                            <div className="p-2">
+                              <div className="small text-muted mb-2">Current tags:</div>
+                              <div className="d-flex flex-wrap gap-1">
+                                {form.tags.map((tag) => (
+                                  <span
+                                    key={tag._id}
+                                    className="badge text-white position-relative"
+                                    style={{ 
+                                      paddingRight: '20px',
+                                      backgroundColor: tag.color
+                                    }}
+                                  >
+                                    {tag.name}
+                                    <span
+                                      className="position-absolute top-0 end-0 h-100 d-flex align-items-center justify-content-center"
+                                      style={{
+                                        width: '16px',
+                                        fontSize: '10px',
+                                        color: 'white',
+                                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                                        borderTopRightRadius: '0.375rem',
+                                        borderBottomRightRadius: '0.375rem'
+                                      }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRemoveTag(tag.name);
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+                                      }}
+                                    >
+                                      ×
+                                    </span>
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Add Button */}
+                          <div className="p-2 border-top">
+                            <button
+                              type="button"
+                              className="btn btn-primary btn-sm w-100"
+                              onClick={handleAddTag}
+                              disabled={addingTag || !newTag.trim()}
+                            >
+                              {addingTag ? (
+                                <>
+                                  <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                                  Adding...
+                                </>
+                              ) : (
+                                'Add Tag'
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Display current tags */}
+                  {form.tags && form.tags.length > 0 ? (
+                    <div className="d-flex flex-wrap gap-2">
+                      {form.tags.map((tag, idx) => (
+                        <span
+                          key={tag._id}
+                          className="badge position-relative"
+                          style={{ 
+                            cursor: 'pointer', 
+                            paddingRight: '25px',
+                            backgroundColor: tag.color,
+                            color: '#ffffff'
+                          }}
+                          onClick={() => handleRemoveTag(tag.name)}
+                          title="Click to remove tag"
+                        >
+                          {tag.name}
+                          <span
+                            className="position-absolute top-0 end-0 h-100 d-flex align-items-center justify-content-center"
+                            style={{
+                              width: '20px',
+                              fontSize: '12px',
+                              color: '#ffffff',
+                              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                              borderTopRightRadius: '0.375rem',
+                              borderBottomRightRadius: '0.375rem'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+                            }}
+                          >
+                            ×
+                          </span>
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-muted small">No tags assigned to this policy.</div>
+                  )}
                 </div>
 
                 {/* User Assignment Section */}
