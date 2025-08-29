@@ -150,7 +150,7 @@ export async function GET(request) {
     }
 
     const users = await User.find(searchQuery)
-      .select('first_name last_name email')
+      .select('first_name last_name email role')
       .sort({ first_name: 1, last_name: 1 })
       .limit(20);
 

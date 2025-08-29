@@ -78,8 +78,10 @@ export default function AssignToPublishPage() {
           if (response.ok) {
             const data = await response.json();
             if (data.success) {
+              console.log('All users returned:', data.users);
               // Filter to only admin users
               const admins = data.users.filter((user: AdminUser) => user.role === 'admin');
+              console.log('Admin users filtered:', admins);
               setAdminUsers(admins);
             }
           }
