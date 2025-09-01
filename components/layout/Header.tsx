@@ -1,5 +1,5 @@
 "use client";
-import { Home, FileText, BookOpen, Users, Building2, Star, Clock, Tag, Share2, UserPlus, BookOpenText, Search, UserPen } from 'lucide-react'
+import { Home, FileText, BookOpen, Users, Building2, Star, Clock, Tag, Share2, UserPlus, BookOpenText, Search, UserPen, ClipboardList, Bell, Calendar } from 'lucide-react'
 import React from 'react'
 import { useRouter } from 'next/navigation';
 
@@ -10,27 +10,18 @@ function Header({ activeNav, setActiveNav, isAdmin, assignedPoliciesCount }: {
 	assignedPoliciesCount?: number 
 }) {
 	const router = useRouter();
-	let sidebarItems = [
-		{ id: "dashboard", label: "Dashboard", icon: Home },
-		{ id: "search", label: "Global Search", icon: Search },
-		{ id: "myAssignedPolicies", label: "My Assigned Policies", icon: FileText },
-		// { id: "documents", label: "All Documents", icon: FileText },
-		{ id: "policies", label: "All Policies", icon: BookOpen },
-		{ id: "training", label: "Training", icon: Users },
-		{ id: "hr", label: "HR Resources", icon: Building2 },
-		{ id: "culture", label: "Culture Guide", icon: Star },
-		{ id: "process", label: "Processes", icon: BookOpenText },
-		// { id: "tags", label: "Tags", icon: Tag },
-		// { id: "shared", label: "Shared", icon: Share2 },
-	]
-	if (isAdmin) {
-		sidebarItems = [
-			{ id: "addUser", label: "Add User", icon: UserPlus },
-			{ id: "editUser", label: "Edit User", icon: UserPen },
-			{ id: "manageTags", label: "Manage Tags", icon: Tag },
-			{ id: "sessiontest", label: "Session Test", icon: BookOpenText },
-		]
-	}
+	const sidebarItems = [
+		{ id: "dashboard", label: "Dashboard", icon: Home, href: "/dashboard" },
+		{ id: "search", label: "Global Search", icon: Search, href: "/search" },
+		{ id: "myAssignedPolicies", label: "My Assigned Policies", icon: ClipboardList, href: "/my-assigned-policies" },
+		{ id: "policies", label: "All Policies", icon: FileText, href: "/policies" },
+		{ id: "training", label: "Training", icon: Users, href: "/training" },
+		{ id: "hrResources", label: "HR Resources", icon: Building2, href: "/hr-resources" },
+		{ id: "cultureGuide", label: "Culture Guide", icon: Star, href: "/culture-guide" },
+		{ id: "processes", label: "Processes", icon: BookOpenText, href: "/processes" },
+		{ id: "calendar", label: "Calendar", icon: Calendar, href: "/calendar" }
+	];
+
 	return (
 		<nav className="p-3">
 			{sidebarItems.map((item) => {
@@ -43,18 +34,7 @@ function Header({ activeNav, setActiveNav, isAdmin, assignedPoliciesCount }: {
 				}`}
 				onClick={() => {
 					setActiveNav(item.id);
-					if (item.id === "dashboard") router.push("/dashboard");
-					if (item.id === "myAssignedPolicies") router.push("/my-assigned-policies");
-					if (item.id === "search") router.push("/search");
-					if (item.id === "policies") router.push("/policies");
-					if (item.id === "addUser") router.push("/add-user");
-					if (item.id === "editUser") router.push("/edit-user");
-					if (item.id === "manageTags") router.push("/manage-tags");
-					if (item.id === "sessiontest") router.push("/session-test");
-					if (item.id === "hr") router.push("/policies/HR");
-					if (item.id === "culture") router.push("/policies/Culture");
-					if (item.id === "training") router.push("/policies/Training");
-					if (item.id === "process") router.push("/policies/Process");
+					if (item.href) router.push(item.href);
 				}}
 				style={{
 					backgroundColor: activeNav === item.id ? "#f8f9fa" : "transparent",

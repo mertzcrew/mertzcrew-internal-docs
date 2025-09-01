@@ -1,5 +1,5 @@
 // lib/mongodb.js
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -28,4 +28,6 @@ async function dbConnect() {
   return cached.conn;
 }
 
-export default dbConnect;
+// Export both functions for compatibility
+module.exports = dbConnect;
+module.exports.connectDB = dbConnect;

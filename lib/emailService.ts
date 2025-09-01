@@ -179,6 +179,49 @@ export const emailTemplates = {
       
       This is an automated email from the Mertz Control Room system. Please do not reply to this email.
     `
+  }),
+
+  eventInvitation: (userName: string, fromUserName: string, eventTitle: string, eventDate: string, eventUrl: string) => ({
+    subject: 'Mertz Control Room - Event Invitation',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Event Invitation</h2>
+        <p>Hello ${userName},</p>
+        <p>You have been invited to an event by ${fromUserName}.</p>
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #28a745;">
+          <h3 style="margin-top: 0; color: #155724;">${eventTitle}</h3>
+          <p style="margin-bottom: 10px; color: #155724;"><strong>Date:</strong> ${eventDate}</p>
+          <p style="margin-bottom: 20px; color: #155724;">Please click the button below to view the event details and respond to the invitation.</p>
+          <a href="${eventUrl}" style="background-color: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+            View Event
+          </a>
+        </div>
+        <p style="color: #6c757d; font-size: 14px;">
+          You can accept or decline this invitation by visiting the event page.
+        </p>
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+        <p style="color: #666; font-size: 12px;">
+          This is an automated email from the Mertz Control Room system. Please do not reply to this email.
+        </p>
+      </div>
+    `,
+    text: `
+      Event Invitation
+      
+      Hello ${userName},
+      
+      You have been invited to an event by ${fromUserName}.
+      
+      Event: ${eventTitle}
+      Date: ${eventDate}
+      
+      Please visit the following link to view the event details and respond to the invitation:
+      ${eventUrl}
+      
+      You can accept or decline this invitation by visiting the event page.
+      
+      This is an automated email from the Mertz Control Room system. Please do not reply to this email.
+    `
   })
 };
 
@@ -273,4 +316,20 @@ export async function testEmailService() {
   
   console.log('Test email result:', result);
   return result;
+} 
+
+export async function sendEventInvitationEmail(userEmail: string, userName: string, fromUserName: string, eventTitle: string, eventDate: Date, eventId: string) {
+  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  const eventUrl = `${baseUrl}/calendar/event/${eventId}`;
+  const formattedDate = eventDate.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  
+  const template = emailTemplates.eventInvitation(userName, fromUserName, eventTitle, formattedDate, eventUrl);
+  return await sendEmail(userEmail, template.subject, template.html, template.text);
 } 

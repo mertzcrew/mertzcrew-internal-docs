@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Header from './Header';
 import NotificationBell from '../notifications/NotificationBell';
 import GlobalSearch from '../search/GlobalSearch';
-import { User, Settings, LogOut, Building2 } from 'lucide-react';
+import { User, Settings, LogOut, Building2, UserPlus, UserPen, Tag, Share2 } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
@@ -73,6 +73,13 @@ function Sidebar() {
       router.push('/dashboard');
     }
   };
+
+  const adminItems = [
+    { id: "addUser", label: "Add User", icon: UserPlus, href: "/add-user" },
+    { id: "editUsers", label: "Edit User", icon: UserPen, href: "/edit-user" },
+    { id: "manageTags", label: "Manage Tags", icon: Tag, href: "/manage-tags" },
+    { id: "sessionTest", label: "Session Test", icon: Share2, href: "/session-test" }
+  ];
 
   return (
     <div className="bg-white border-end" style={{ width: "280px", minHeight: "100vh" }}>
@@ -155,8 +162,33 @@ function Sidebar() {
           </div>
         </div>
 
+        {/* Admin section - only show if user is admin */}
         {session?.user?.role === 'admin' && (
-          <Header activeNav={activeNav} setActiveNav={setActiveNav} isAdmin={true} assignedPoliciesCount={assignedPoliciesCount} />
+          <div className="mt-3">
+            {adminItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  className={`btn w-100 text-start d-flex align-items-center mb-1 ${
+                    activeNav === item.id ? "btn-light" : "btn-link text-decoration-none text-dark"
+                  }`}
+                  onClick={() => {
+                    setActiveNav(item.id);
+                    if (item.href) router.push(item.href);
+                  }}
+                  style={{
+                    backgroundColor: activeNav === item.id ? "#f8f9fa" : "transparent",
+                    border: "none",
+                    padding: "8px 12px",
+                  }}
+                >
+                  <Icon size={18} className="me-2" />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>
