@@ -227,34 +227,34 @@ export default function CalendarPage() {
   return (
     <div className="p-6">
       {/* Calendar Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Calendar</h1>
-        <div className="flex items-center space-x-4">
+      <div className="d-flex justify-content-between align-items-center mb-4 pt-24 pr-24 pl-24">
+        <h1 className="h3 mb-0">Calendar</h1>
+        <div className="d-flex align-items-center gap-3">
           <button
             onClick={goToPreviousMonth}
-            className="px-3 py-2 border rounded hover:bg-gray-100"
+            className="btn btn-outline-secondary"
           >
             ←
           </button>
           <button
             onClick={goToToday}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="btn btn-primary"
           >
             Today
           </button>
           <button
             onClick={goToNextMonth}
-            className="px-3 py-2 border rounded hover:bg-gray-100"
+            className="btn btn-outline-secondary"
           >
             →
           </button>
-          <button
-            onClick={handleCreateEvent}
-            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-          >
-            + Event
-          </button>
         </div>
+        <button
+          onClick={handleCreateEvent}
+          className="btn btn-primary"
+        >
+          + Event
+        </button>
       </div>
 
       {/* Month Display */}
