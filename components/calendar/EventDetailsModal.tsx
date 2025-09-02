@@ -425,7 +425,10 @@ export default function EventDetailsModal({
                       <>
                         <button 
                           className="btn btn-outline-primary btn-sm" 
-                          onClick={() => onEditEvent?.(event)}
+                          onClick={() => {
+                            onClose(); // Close the details modal first
+                            onEditEvent?.(event); // Then open the edit modal
+                          }}
                           disabled={loading}
                         >
                           <Edit size={14} className="me-1" />

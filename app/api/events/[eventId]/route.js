@@ -37,7 +37,7 @@ export async function GET(request, { params }) {
 export async function PUT(request, { params }) {
   try {
     const session = await getServerSession(authOptions);
-    if (! session) {
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -46,123 +46,174 @@ export async function PUT(request, { params }) {
     const { eventId } = await params;
     const body = await request.json();
     const {
-      title,
-      description,
-      location,
-      start_date,
-      end_date,
-      all_day,
-      privacy,
-      invited_users,
-      recurring,
-      color,
-      reminders,
-      updateType
+		title,
+		description,
+		location,
+		start_date,
+		end_date,
+		all_day,
+		privacy,
+		invited_users,
+		recurring,
+		color,
+		reminders,
+		updateType
     } = body;
 
     // Validate required fields
     if (!title || !start_date || !end_date) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      	return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     // Handle recurring instance IDs
     let actualEventId = eventId;
     if (eventId.includes('_')) {
-      actualEventId = eventId.split('_')[0];
+      	actualEventId = eventId.split('_')[0];
     }
 
     const event = await Event.findById(actualEventId);
     if (!event) {
-      return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+      	return NextResponse.json({ error: 'Event not found' }, { status: 404 });
     }
 
-    // Check if user has permission to edit this event
-    if (event.created_by.toString() !== session.user.id && event.privacy !== 'public') {
+
+    let hasPermission = false;
+    if (event.created_by_email) {
+      hasPermission = event.created_by_email === session.user.email || event.privacy === 'public';
+    } else {
+      hasPermission = true;
+    }
+    if (!hasPermission) {
       return NextResponse.json({ error: 'Not authorized to edit this event' }, { status: 403 });
     }
 
-    if (event.recurring?.is_recurring && updateType === 'single') {
-      // Update single instance - create a new modified instance
-      const modifiedInstanceData = {
-        title: title.trim(),
-        description: description?.trim() || '',
-        location: location?.trim() || '',
-        start_date: new Date(start_date),
-        end_date: new Date(end_date),
-        all_day: all_day || false,
-        privacy: privacy || 'private',
-        created_by: event.created_by,
-        invited_users: invited_users || event.invited_users,
-        color: color || event.color,
-        reminders: reminders || event.reminders,
-        is_modified_instance: true,
-        original_event_id: event._id
-      };
+    // Check if this is a recurring event (either original or instance)
+    const isRecurringEvent = event.recurring?.is_recurring === true || event.is_recurring_instance === true;
 
-      const modifiedInstance = new Event(modifiedInstanceData);
-      await modifiedInstance.save();
-
-      console.log('Created modified instance:', {
-        originalEventId: event._id,
-        modifiedInstanceId: modifiedInstance._id,
-        date: start_date
+    if (isRecurringEvent && updateType === 'future') {
+      	console.log('Updating recurring event series:', {
+        eventId: event._id,
+        updateType: updateType,
+        isRecurring: event.recurring?.is_recurring,
+        isRecurringInstance: event.is_recurring_instance
       });
+      let originalEventId = event._id;
+      if (event.is_recurring_instance && event.original_event_id) {
+        originalEventId = event.original_event_id;
+        console.log('This is a recurring instance, using original event ID:', originalEventId);
+      }
 
-      // Return the modified instance (without population to avoid User model issues)
-      return NextResponse.json({
-        success: true,
-        message: 'Single event instance updated successfully',
-        event: modifiedInstance
-      });
-    } else if (event.recurring?.is_recurring && updateType === 'future') {
-      // Update this and all future events
-      // First, update the original event
-      event.title = title.trim();
-      event.description = description?.trim() || '';
-      event.location = location?.trim() || '';
-      event.start_date = new Date(start_date);
-      event.end_date = new Date(end_date);
-      event.all_day = all_day || false;
-      event.privacy = privacy || 'private';
-      event.invited_users = invited_users || event.invited_users;
-      event.color = color || event.color;
-      event.reminders = reminders || event.reminders;
+      // Find the original event
+      const originalEvent = await Event.findById(originalEventId);
+      if (!originalEvent) {
+        return NextResponse.json({ error: 'Original recurring event not found' }, { status: 404 });
+      }
 
-      await event.save();
+      // Update the original event with new data
+		originalEvent.title = title;
+		originalEvent.description = description || '';
+		originalEvent.location = location || '';
+		originalEvent.start_date = new Date(start_date);
+		originalEvent.end_date = new Date(end_date);
+		originalEvent.all_day = all_day || false;
+		originalEvent.privacy = privacy || 'private';
+		originalEvent.color = color || '#3788d8';
+		originalEvent.reminders = reminders || [{ type: 'email', minutes_before: 15 }];
+		originalEvent.recurring = recurring || originalEvent.recurring;
+      	await originalEvent.save();
+		const futureInstances = await Event.find({
+			$or: [
+			{ _id: originalEventId }, // The original event
+			{ original_event_id: originalEventId } // All instances
+			],
+			start_date: { $gte: new Date(start_date) } // From current event's date forward
+		});
 
-      // Regenerate all recurring instances
-      await event.updateRecurringInstances();
+      	console.log('Found future instances to update:', futureInstances.length);
 
-      console.log('Updated recurring event and regenerated instances:', event._id);
+		for (const instance of futureInstances) {
+			if (instance._id.toString() !== originalEventId.toString()) {
+				await Event.findByIdAndUpdate(instance._id, {
+					title: originalEvent.title,
+					description: originalEvent.description,
+					location: originalEvent.location,
+					all_day: originalEvent.all_day,
+					privacy: originalEvent.privacy,
+					color: originalEvent.color,
+					reminders: originalEvent.reminders,
+					recurring: originalEvent.recurring,
+				});
+			}
+		}
+		if (originalEvent.recurring.is_recurring) {
+			// Set the start date to the current event's date
+			const newStartDate = new Date(start_date);
+			originalEvent.start_date = newStartDate;
+			await originalEvent.save();
 
-      // Return the updated event (without population to avoid User model issues)
-      return NextResponse.json({
-        success: true,
-        message: 'Recurring event updated successfully',
-        event: event
-      });
+			// Generate new instances from the current date forward
+			const newInstances = await originalEvent.generateRecurringInstances();
+			console.log('Generated new instances:', newInstances.length);
+		}
+
+		return NextResponse.json({
+			success: true,
+			message: `Recurring event series updated successfully. Updated ${futureInstances.length} events.`
+		});
+
+    } else if (isRecurringEvent && updateType === 'single') {
+		// Update single instance - create a modified instance
+		console.log('Updating single recurring instance:', event._id);
+
+		// Create a modified instance with the new data
+		const originalEvent = await Event.findById(eventId);
+		if (!originalEvent) {
+			return NextResponse.json({ error: 'Original recurring event not found' }, { status: 404 });
+		}
+
+		// Update the original event with new data
+		originalEvent.title = title;
+		originalEvent.description = description || '';
+		originalEvent.location = location || '';
+		originalEvent.start_date = new Date(start_date);
+		originalEvent.end_date = new Date(end_date);
+		originalEvent.all_day = all_day || false;
+		originalEvent.privacy = privacy || 'private';
+		originalEvent.color = color || '#3788d8';
+		originalEvent.reminders = reminders || [{ type: 'email', minutes_before: 15 }];
+		originalEvent.recurring = recurring || originalEvent.recurring;
+		await originalEvent.save();
+		return NextResponse.json({
+			success: true,
+			message: 'Single event instance updated successfully'
+		});
+
     } else {
-      // Update non-recurring event or single instance
-      event.title = title.trim();
-      event.description = description?.trim() || '';
-      event.location = location?.trim() || '';
+      // Regular update for non-recurring events or new events
+      console.log('Performing regular event update:', event._id);
+
+      // Update the event
+      event.title = title;
+      event.description = description || '';
+      event.location = location || '';
       event.start_date = new Date(start_date);
       event.end_date = new Date(end_date);
       event.all_day = all_day || false;
       event.privacy = privacy || 'private';
-      event.invited_users = invited_users || event.invited_users;
-      event.color = color || event.color;
-      event.reminders = reminders || event.reminders;
+      event.color = color || '#3788d8';
+      event.reminders = reminders || [{ type: 'email', minutes_before: 15 }];
+      event.recurring = recurring || event.recurring;
 
       await event.save();
 
-      // Return the updated event (without population to avoid User model issues)
+      console.log('Event updated successfully:', event._id);
+
       return NextResponse.json({
         success: true,
-        message: 'Event updated successfully',
-        event: event
+        message: 'Event updated successfully'
       });
     }
+
   } catch (error) {
     console.error('Error updating event:', error);
     return NextResponse.json({ error: 'Failed to update event' }, { status: 500 });
@@ -203,8 +254,6 @@ export async function DELETE(request, { params }) {
 
     // Check if user has permission to delete this event
     // Compare by email since user IDs are from different systems
-    // For new events with created_by_email, check ownership
-    // For old events without created_by_email, allow deletion for now (temporary)
     let hasPermission = false;
     if (event.created_by_email) {
       // New event - check email ownership
@@ -213,7 +262,6 @@ export async function DELETE(request, { params }) {
       // Old event - temporarily allow deletion (we'll implement proper user lookup later)
       hasPermission = true;
     }
-    
     if (!hasPermission) {
       return NextResponse.json({ error: 'Not authorized to delete this event' }, { status: 403 });
     }

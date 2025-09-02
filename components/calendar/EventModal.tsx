@@ -149,110 +149,51 @@ export default function EventModal({
 
   // Get current day of week for the event
   const getCurrentDayOfWeek = () => {
-    console.log('getCurrentDayOfWeek called with formData.start_date:', formData.start_date);
-    
-    // Check if start_date is valid
     if (!formData.start_date) {
-      console.log('start_date is empty, using current date');
-      return new Date().getDay();
+      const date = new Date();
+      return date.getDay();
     }
     
-    // Parse date as local time to avoid timezone issues
     const [year, month, day] = formData.start_date.split('-').map(Number);
-    const date = new Date(year, month - 1, day); // month is 0-indexed in Date constructor
-    console.log('Parsed date object (local):', date);
-    
-    // Check if the date is valid
-    if (isNaN(date.getTime())) {
-      console.log('Invalid date parsed, using current date');
-      return new Date().getDay();
-    }
-    
-    console.log('Date.getDay() result:', date.getDay());
+    const date = new Date(year, month - 1, day);
     return date.getDay();
   };
 
   // Get current day of month for the event
   const getCurrentDayOfMonth = () => {
-    console.log('getCurrentDayOfMonth called with formData.start_date:', formData.start_date);
-    
-    // Check if start_date is valid
     if (!formData.start_date) {
-      console.log('start_date is empty, using current date');
-      return new Date().getDate();
+      const date = new Date();
+      return date.getDate();
     }
     
-    // Parse date as local time to avoid timezone issues
     const [year, month, day] = formData.start_date.split('-').map(Number);
-    const date = new Date(year, month - 1, day); // month is 0-indexed in Date constructor
-    console.log('Parsed date object (local):', date);
-    
-    // Check if the date is valid
-    if (isNaN(date.getTime())) {
-      console.log('Invalid date parsed, using current date');
-      return new Date().getDate();
-    }
-    
-    console.log('Date.getDate() result:', date.getDate());
+    const date = new Date(year, month - 1, day);
     return date.getDate();
   };
 
   // Get week number of month (1st, 2nd, 3rd, 4th, last)
   const getWeekOfMonth = () => {
-    console.log('getWeekOfMonth called with formData.start_date:', formData.start_date);
-    
-    // Check if start_date is valid
     if (!formData.start_date) {
-      console.log('start_date is empty, using current date');
-      const currentDate = new Date();
-      const dayOfMonth = currentDate.getDate();
+      const date = new Date();
+      const dayOfMonth = date.getDate();
       const weekOfMonth = Math.ceil(dayOfMonth / 7);
-      console.log('Week of month calculation (current date):', { dayOfMonth, weekOfMonth });
       return weekOfMonth;
     }
     
-    // Parse date as local time to avoid timezone issues
     const [year, month, day] = formData.start_date.split('-').map(Number);
-    const date = new Date(year, month - 1, day); // month is 0-indexed in Date constructor
-    console.log('Parsed date object (local):', date);
-    
-    // Check if the date is valid
-    if (isNaN(date.getTime())) {
-      console.log('Invalid date parsed, using current date');
-      const currentDate = new Date();
-      const dayOfMonth = currentDate.getDate();
-      const weekOfMonth = Math.ceil(dayOfMonth / 7);
-      console.log('Week of month calculation (current date):', { dayOfMonth, weekOfMonth });
-      return weekOfMonth;
-    }
-    
+    const date = new Date(year, month - 1, day);
     const dayOfMonth = date.getDate();
     const weekOfMonth = Math.ceil(dayOfMonth / 7);
-    console.log('Week of month calculation:', { dayOfMonth, weekOfMonth });
     return weekOfMonth;
   };
 
   // Generate recurring options based on current event date
   const getRecurringOptions = () => {
-    console.log('getRecurringOptions called with formData:', {
-      start_date: formData.start_date,
-      start_date_type: typeof formData.start_date,
-      formData: formData
-    });
-    
     const currentDay = getCurrentDayOfWeek();
     const currentDayName = DAYS_OF_WEEK[currentDay].label;
     const currentDayOfMonth = getCurrentDayOfMonth();
     const weekOfMonth = getWeekOfMonth();
     const weekSuffix = weekOfMonth === 1 ? 'st' : weekOfMonth === 2 ? 'nd' : weekOfMonth === 3 ? 'rd' : 'th';
-    
-    console.log('Calculated values:', {
-      currentDay,
-      currentDayName,
-      currentDayOfMonth,
-      weekOfMonth,
-      weekSuffix
-    });
     
     return [
       { value: 'none', label: 'Does not repeat' },
@@ -301,13 +242,7 @@ export default function EventModal({
         
         // Generate recurring options after form data is set
         setTimeout(() => {
-          console.log('Generating recurring options for editing - formData state:', formData);
-          console.log('Generating recurring options for editing - newFormData:', newFormData);
           const options = getRecurringOptions();
-          console.log('Generated recurring options for editing:', {
-            startDate: newFormData.start_date,
-            options: options
-          });
           setRecurringOptions(options);
         }, 0);
         
@@ -349,13 +284,7 @@ export default function EventModal({
         
         // Generate recurring options after form data is set
         setTimeout(() => {
-          console.log('Generating recurring options for new event - formData state:', formData);
-          console.log('Generating recurring options for new event - newFormData:', newFormData);
           const options = getRecurringOptions();
-          console.log('Generated recurring options for new event:', {
-            startDate: newFormData.start_date,
-            options: options
-          });
           setRecurringOptions(options);
         }, 0);
       }
@@ -367,10 +296,6 @@ export default function EventModal({
   useEffect(() => {
     if (formData.start_date) {
       const options = getRecurringOptions();
-      console.log('Updated recurring options for date change:', {
-        startDate: formData.start_date,
-        options: options
-      });
       setRecurringOptions(options);
     }
   }, [formData.start_date]);
@@ -559,7 +484,7 @@ export default function EventModal({
     if (!validateForm()) return;
 
     // For recurring events being edited, show update options
-    if (isEditing && event?.recurring?.is_recurring) {
+    if (isEditing && (event?.recurring?.is_recurring || event?.is_recurring_instance)) {
       const startDateTime = new Date(`${formData.start_date} ${formData.start_time || '00:00'}`);
       const endDateTime = new Date(`${formData.end_date} ${formData.end_time || '23:59'}`);
 
