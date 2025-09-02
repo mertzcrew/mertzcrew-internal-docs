@@ -77,8 +77,7 @@ function Sidebar() {
   const adminItems = [
     { id: "addUser", label: "Add User", icon: UserPlus, href: "/add-user" },
     { id: "editUsers", label: "Edit User", icon: UserPen, href: "/edit-user" },
-    { id: "manageTags", label: "Manage Tags", icon: Tag, href: "/manage-tags" },
-    { id: "sessionTest", label: "Session Test", icon: Share2, href: "/session-test" }
+    { id: "manageTags", label: "Manage Tags", icon: Tag, href: "/manage-tags" }
   ];
 
   return (
