@@ -1,11 +1,11 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import Header from './Header';
-import NotificationBell from '../notifications/NotificationBell';
 import GlobalSearch from '../search/GlobalSearch';
 import { User, Settings, LogOut, Building2, UserPlus, UserPen, Tag, Share2 } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 function Sidebar() {
   const [activeNav, setActiveNav] = useState("dashboard");
@@ -82,8 +82,8 @@ function Sidebar() {
 
   return (
     <div className="bg-white border-end" style={{ width: "280px", minHeight: "100vh" }}>
-      <div className="p-3 border-bottom">
-        <div className="d-flex align-items-center justify-content-between mb-3">
+      <div className="p-3 border-bottom pb-6">
+        <div className="d-flex align-items-center justify-content-between mb-2">
           <div 
             className="d-flex align-items-center"
             onClick={handleBrandClick}
@@ -102,20 +102,17 @@ function Sidebar() {
               }
             }}
           >
-            <div
-              className="rounded me-2 d-flex align-items-center justify-content-center"
-              style={{
-                width: "32px",
-                height: "32px",
-                backgroundColor: "#ca1f27",
-                color: "white",
-              }}
-            >
-              <Building2 size={18} />
+            <div className="me-2">
+              <Image
+                src="/Mertzcrew.jpeg"
+                alt="Mertzcrew Logo"
+                width={50}
+                height={50}
+                className="rounded"
+              />
             </div>
-            <h5 className="mb-0 fw-bold">Mertz Control Room</h5>
+            <h5 className="mb-0 fw-bold" style={{ fontSize: '2.0 rem' }}>Control Room</h5>
           </div>
-          <NotificationBell />
         </div>
       </div>
       <Header activeNav={activeNav} setActiveNav={setActiveNav} assignedPoliciesCount={assignedPoliciesCount} />

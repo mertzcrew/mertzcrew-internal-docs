@@ -104,6 +104,10 @@ body {
 .pr-24 { padding-right: 24px;}
 .pl-24 { padding-left: 24px;}
 
+.pb-6 {
+    padding-bottom: 6px !important;
+}
+
 .cursor-pointer {
   cursor: pointer;
 }

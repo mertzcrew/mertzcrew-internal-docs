@@ -31,6 +31,7 @@ import PopularDocumentItem from './ui/PopularDocumentItem';
 import StatCard from './ui/StatCard';
 import GlobalSearch from '../search/GlobalSearch';
 import { useRouter } from 'next/navigation';
+import NotificationBell from '../notifications/NotificationBell';
 
 interface Policy {
     _id: string;
@@ -201,6 +202,7 @@ export default function Dashboard() {
             <h4 className="mb-0 me-3">Dashboard</h4>
           </div>
           <div className="d-flex align-items-center gap-3">
+            <NotificationBell />
             <div style={{ width: "300px" }}>
               <GlobalSearch />
             </div>
