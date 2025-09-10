@@ -292,10 +292,11 @@ export async function GET(request) {
     // Get query parameters
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
+    const category = searchParams.get('category');
     const limit = parseInt(searchParams.get('limit')) || 0;
     const sort = searchParams.get('sort') || 'created_at:desc';
     
-    console.log('API - Query params:', { status, limit, sort });
+    console.log('API - Query params:', { status, category, limit, sort });
     
     // Temporary test endpoint to check database without auth
     const test = searchParams.get('test');
@@ -417,23 +418,30 @@ export async function GET(request) {
       policiesQuery = policiesQuery.where('status', status);
     }
 
-    // If user is admin, they can see all policies (unless status filter is applied)
-    if (user.role === 'admin' && !status) {
+    // Apply category filter if provided
+    if (category) {
+      policiesQuery = policiesQuery.where('category', category);
+    }
+
+    // If user is admin, they can see all policies
+    if (user.role === 'admin') {
       console.log('Admin user - showing all policies');
-      policiesQuery = Policy.find({});
-      if (status) {
-        policiesQuery = policiesQuery.where('status', status);
-      }
+      // Base query already set above with filters applied
     } else {
       console.log('Non-admin user - filtering policies');
       console.log('User ID:', user._id);
 
-      // Visibility rules for non-admins:
-      // - Active (published) policies only if organization is "all" or matches user's organization
-      // - Draft policies only if the user is assigned
+      // Build base visibility conditions
       const activeVisibility = { status: 'active', organization: { $in: ['all', user.organization] } };
       const draftVisibility = { status: 'draft', assigned_users: user._id };
 
+      // Add category filter to visibility conditions if provided
+      if (category) {
+        activeVisibility.category = category;
+        draftVisibility.category = category;
+      }
+
+      // Apply visibility rules for non-admins
       if (status) {
         if (status === 'active') {
           policiesQuery = Policy.find(activeVisibility);

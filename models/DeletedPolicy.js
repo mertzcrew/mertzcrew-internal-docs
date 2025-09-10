@@ -34,7 +34,6 @@ const DeletedPolicySchema = new mongoose.Schema({
 		"Culture",
 		"Documentation",
 			"Process",
-		"Safety",
 		"Quality",
 		"Other"
 		]

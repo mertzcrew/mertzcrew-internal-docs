@@ -255,7 +255,6 @@ function PolicyForm({
                     <option value="Culture">Culture</option>
                     <option value="Documentation">Documentation</option>
                     <option value="Process">Process</option>
-                    <option value="Safety">Safety</option>
                     <option value="Quality">Quality</option>
                     <option value="Other">Other</option>
                   </select>

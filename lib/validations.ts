@@ -48,7 +48,6 @@ export const POLICY_CATEGORIES = [
     "Culture",
     "Documentation",
     "Process",
-    "Safety",
     "Quality",
     "Other"
 ] as const;

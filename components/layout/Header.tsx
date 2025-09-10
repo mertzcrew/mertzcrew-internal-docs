@@ -1,5 +1,5 @@
 "use client";
-import { Home, FileText, BookOpen, Users, Building2, Star, Clock, Tag, Share2, UserPlus, BookOpenText, Search, UserPen, ClipboardList, Bell, Calendar } from 'lucide-react'
+import { Home, FileText, BookOpen, Users, Building2, Star, Clock, Tag, Share2, UserPlus, BookOpenText, Search, UserPen, ClipboardList, Bell, Calendar, CheckCircle } from 'lucide-react'
 import React from 'react'
 import { useRouter } from 'next/navigation';
 
@@ -15,10 +15,11 @@ function Header({ activeNav, setActiveNav, isAdmin, assignedPoliciesCount }: {
 		{ id: "search", label: "Global Search", icon: Search, href: "/search" },
 		{ id: "myAssignedPolicies", label: "My Assigned Policies", icon: ClipboardList, href: "/my-assigned-policies" },
 		{ id: "policies", label: "All Policies", icon: FileText, href: "/policies" },
-		{ id: "training", label: "Training", icon: Users, href: "/training" },
+		{ id: "documentation", label: "Documentation", icon: Users, href: "/documentation" },
 		{ id: "hrResources", label: "HR Resources", icon: Building2, href: "/hr-resources" },
 		{ id: "cultureGuide", label: "Culture Guide", icon: Star, href: "/culture-guide" },
 		{ id: "processes", label: "Processes", icon: BookOpenText, href: "/processes" },
+		{ id: "quality", label: "Quality", icon: CheckCircle, href: "/quality" },
 		{ id: "calendar", label: "Calendar", icon: Calendar, href: "/calendar" }
 	];
 
