@@ -114,6 +114,21 @@ export default function PolicyDetailPage() {
   const [tagPopoverRef, setTagPopoverRef] = useState<HTMLDivElement | null>(null);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [addingUsers, setAddingUsers] = useState(false);
+  const [showSignaturesModal, setShowSignaturesModal] = useState(false);
+  const [signatures, setSignatures] = useState<Array<{
+    _id: string;
+    name: string;
+    signedAt: string;
+    user: {
+      _id: string;
+      first_name: string;
+      last_name: string;
+      email: string;
+      department?: string;
+      position?: string;
+    }
+  }>>([]);
+  const [loadingSignatures, setLoadingSignatures] = useState(false);
   const { data: session } = useSession();
   const router = useRouter();
   const params = useParams();
@@ -381,6 +396,30 @@ export default function PolicyDetailPage() {
       setSigning(false);
     }
   }
+
+  const fetchSignatures = async () => {
+    try {
+      setLoadingSignatures(true);
+      const response = await fetch(`/api/policies/${policyId}/signatures`);
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        setSignatures(result.signatures);
+      } else {
+        setError(result.message || 'Failed to fetch signatures');
+      }
+    } catch (error) {
+      console.error('Error fetching signatures:', error);
+      setError('An error occurred while fetching signatures');
+    } finally {
+      setLoadingSignatures(false);
+    }
+  };
+
+  const handleViewSignatures = () => {
+    setShowSignaturesModal(true);
+    fetchSignatures();
+  };
 
   // Check if user can edit this policy
   const canEdit = policy && (
@@ -1429,7 +1468,19 @@ export default function PolicyDetailPage() {
               )}
               {policy.status === 'active' && policy.require_signature && (
                 <div className="mb-4">
-                  <h5>Electronic Signature</h5>
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                    <h5 className="mb-0">Electronic Signature</h5>
+                    {session?.user?.role === 'admin' && (
+                      <button
+                        className="btn btn-outline-info"
+                        onClick={handleViewSignatures}
+                        disabled={loadingSignatures}
+                      >
+                        <Users size={16} className="me-2" />
+                        {loadingSignatures ? 'Loading...' : 'View Who Signed'}
+                      </button>
+                    )}
+                  </div>
                   {userHasSigned ? (
                     <div className="alert alert-success">
                       <CheckCircle size={16} className="me-2" />
@@ -1508,6 +1559,98 @@ export default function PolicyDetailPage() {
                   ) : (
                     'Delete Policy'
                   )}
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" style={{ zIndex: 1040 }}></div>
+        </div>
+      )}
+
+      {/* Signatures Modal */}
+      {showSignaturesModal && (
+        <div className="modal fade show" style={{ display: 'block', zIndex: 1050 }} tabIndex={-1}>
+          <div className="modal-dialog modal-lg" style={{ zIndex: 1055 }}>
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Policy Signatures</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowSignaturesModal(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                {loadingSignatures ? (
+                  <div className="text-center py-4">
+                    <div className="spinner-border text-primary" role="status">
+                      <span className="visually-hidden">Loading signatures...</span>
+                    </div>
+                  </div>
+                ) : signatures.length === 0 ? (
+                  <div className="text-center py-4">
+                    <Users size={48} className="text-muted mb-3" />
+                    <h6 className="text-muted">No signatures yet</h6>
+                    <p className="text-muted small">No users have signed this policy yet.</p>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="mb-3">
+                      <strong>{signatures.length}</strong> user{signatures.length !== 1 ? 's' : ''} ha{signatures.length !== 1 ? 've' : 's'} signed this policy
+                    </div>
+                    <div className="table-responsive">
+                      <table className="table table-hover">
+                        <thead>
+                          <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Department</th>
+                            <th>Position</th>
+                            <th>Signed Date</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {signatures.map((signature) => (
+                            <tr key={signature._id}>
+                              <td>
+                                <div>
+                                  <strong>{signature.user.first_name} {signature.user.last_name}</strong>
+                                  <div className="small text-muted">Signed as: {signature.name}</div>
+                                </div>
+                              </td>
+                              <td>{signature.user.email}</td>
+                              <td>{signature.user.department || '-'}</td>
+                              <td>{signature.user.position || '-'}</td>
+                              <td>
+                                <div>
+                                  {new Date(signature.signedAt).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric'
+                                  })}
+                                </div>
+                                <div className="small text-muted">
+                                  {new Date(signature.signedAt).toLocaleTimeString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowSignaturesModal(false)}
+                >
+                  Close
                 </button>
               </div>
             </div>
