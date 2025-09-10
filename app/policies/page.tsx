@@ -33,7 +33,11 @@ interface Policy {
   description: string;
   category: string;
   organization: string;
-  tags: string[];
+  tags: Array<{
+    _id: string;
+    name: string;
+    color: string;
+  }>;
   status: string;
   pending_changes?: any;
   assigned_users?: Array<{
@@ -124,7 +128,7 @@ export default function PoliciesPage() {
       const filtered = policies.filter(policy =>
         policy.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         policy.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        policy.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        policy.tags.some(tag => tag.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
         policy.category.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setFilteredPolicies(filtered);
@@ -480,9 +484,13 @@ export default function PoliciesPage() {
                         </div>
                         {policy.tags && policy.tags.length > 0 && (
                           <div>
-                            {policy.tags.slice(0, 3).map((tag, index) => (
-                              <span key={index} className="badge bg-light text-dark me-1 small">
-                                {tag}
+                            {policy.tags.slice(0, 3).map((tag) => (
+                              <span 
+                                key={tag._id} 
+                                className="badge text-white me-1 small"
+                                style={{ backgroundColor: tag.color }}
+                              >
+                                {tag.name}
                               </span>
                             ))}
                             {policy.tags.length > 3 && (

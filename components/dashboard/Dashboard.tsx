@@ -196,26 +196,6 @@ export default function Dashboard() {
   return (
     <div className="flex-grow-1">
       {/* Top Navigation */}
-      <div className="bg-white border-bottom p-3">
-        <div className="d-flex justify-content-between align-items-center">
-          <div className="d-flex align-items-center">
-            <h4 className="mb-0 me-3">Dashboard</h4>
-          </div>
-          <div className="d-flex align-items-center gap-3">
-            <NotificationBell />
-            <div style={{ width: "300px" }}>
-              <GlobalSearch />
-            </div>
-            {/* <button className="btn btn-outline-secondary">
-              <Bell size={16} />
-            </button> */}
-            <button className="btn text-white" style={{ backgroundColor: "#ca1f27" }} onClick={() => router.push('/new_policy')}>
-              <Plus size={16} className="me-1" />
-              New Policy
-            </button>
-          </div>
-        </div>
-      </div>
 
       <div className="p-4">
         {/* Hero Section */}

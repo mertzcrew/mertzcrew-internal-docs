@@ -82,39 +82,7 @@ function Sidebar() {
 
   return (
     <div className="bg-white border-end" style={{ width: "280px", minHeight: "100vh" }}>
-      <div className="p-3 border-bottom pb-6">
-        <div className="d-flex align-items-center justify-content-between mb-2">
-          <div 
-            className="d-flex align-items-center"
-            onClick={handleBrandClick}
-            style={{ 
-              cursor: status === 'authenticated' ? 'pointer' : 'default',
-              transition: 'opacity 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              if (status === 'authenticated') {
-                e.currentTarget.style.opacity = '0.7';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (status === 'authenticated') {
-                e.currentTarget.style.opacity = '1';
-              }
-            }}
-          >
-            <div className="me-2">
-              <Image
-                src="/Mertzcrew.jpeg"
-                alt="Mertzcrew Logo"
-                width={50}
-                height={50}
-                className="rounded"
-              />
-            </div>
-            <h5 className="mb-0 fw-bold" style={{ fontSize: '2.0 rem' }}>Control Room</h5>
-          </div>
-        </div>
-      </div>
+      
       <Header activeNav={activeNav} setActiveNav={setActiveNav} assignedPoliciesCount={assignedPoliciesCount} />
       {/* User Profile */}
       <div className="mt-auto p-3 border-top">

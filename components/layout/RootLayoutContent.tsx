@@ -2,6 +2,7 @@
 import React from "react";
 import { useSession } from "next-auth/react";
 import Sidebar from "./Sidebar";
+import TopNavigation from "./TopNavigation";
 
 interface RootLayoutContentProps {
   children: React.ReactNode;
@@ -28,11 +29,14 @@ function RootLayoutContent({ children }: RootLayoutContentProps) {
 
   // If authenticated, show sidebar with main content
   return (
-    <div className="d-flex min-vh-100">
-      <Sidebar />
-      <main className="flex-grow-1">
-        {children}
-      </main>
+    <div className="min-vh-100">
+      <TopNavigation />
+      <div className="d-flex">
+        <Sidebar />
+        <main className="flex-grow-1">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
