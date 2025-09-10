@@ -69,10 +69,10 @@ function TopNavigation() {
               alt="Mertzcrew Logo"
               width={40}
               height={40}
-              className="rounded"
+              className="rounded small-logo-border"
             />
           </div>
-          <h5 className="mb-0 fw-bold" style={{ fontSize: '1.5rem' }}>Control Room</h5>
+          <h5 className="mb-0 fw-bold mt-6" style={{ fontSize: '1.5rem' }}>Control Room</h5>
         </div>
         
         <div className="d-flex align-items-center gap-3">

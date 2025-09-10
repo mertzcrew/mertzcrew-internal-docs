@@ -99,6 +99,13 @@ body {
 .ml-10 {
   margin-left: 10px;
 }
+.mt-6 {
+  margin-top: 6px;
+}
+
+.small-logo-border {
+    border: 1px solid #D9DEE2;
+}
 
 .pt-24 { padding-top: 24px;}
 .pr-24 { padding-right: 24px;}
