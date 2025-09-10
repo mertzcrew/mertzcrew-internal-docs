@@ -297,7 +297,7 @@ export default function Dashboard() {
 						<div className="spinner-border spinner-border-sm me-2" role="status">
 						<span className="visually-hidden">Loading...</span>
 						</div>
-						Loading polocies...
+						Loading policies...
 					</div>
 					) : error ? (
 					<div className="text-center py-4 text-danger">
@@ -315,7 +315,7 @@ export default function Dashboard() {
 					</div>
 					) : recentDocuments.length === 0 ? (
 					<div className="text-center py-4 text-muted">
-						<small>No recent polocies found. Create your first policy to get started!</small>
+						<small>No recent policies found. Create your first policy to get started!</small>
 						<div className="mt-3">
 						<button 
 							className="btn btn-sm btn-primary"
