@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../auth/[...nextauth]/route';
-import dbConnect from '../../../../components/lib/mongodb';
-import DeletedPolicy from '../../../../models/DeletedPolicy';
-import Policy from '../../../../models/Policy';
-import User from '../../../../models/User';
+import dbConnect from '../../../../../components/lib/mongodb';
+import DeletedPolicy from '../../../../../models/DeletedPolicy';
+import Policy from '../../../../../models/Policy';
+import User from '../../../../../models/User';
 
 // POST /api/deleted-policies/[deletedPolicyId]/restore - Restore a deleted policy
 export async function POST(request, { params }) {

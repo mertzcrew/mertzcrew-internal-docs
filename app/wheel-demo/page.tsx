@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import Wheel from '../../components/ui/Wheel';
+// import Wheel from '../../components/ui/Wheel';
 
 export default function WheelDemo() {
   console.log('WheelDemo component rendering'); // Debug log
@@ -41,11 +41,11 @@ export default function WheelDemo() {
             The triangle now points down and the selection logic has been corrected.
           </p>
           
-          <Wheel 
+          {/* <Wheel 
             items={wheelItems}
             onSpinEnd={handleSpinEnd}
             size={400}
-          />
+          /> */}
           
           {selectedItem && (
             <div className="mt-4 p-3 bg-light rounded">
