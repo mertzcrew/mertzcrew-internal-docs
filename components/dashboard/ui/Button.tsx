@@ -36,7 +36,7 @@ function Button({ icon, label, ...props }: DashboardButtonProps) {
       }
       {...props}
     >
-      {icon && React.cloneElement(icon as React.ReactElement, { size: 24, className: 'mb-2' })}
+      {icon && React.cloneElement(icon as React.ReactElement<any>, { size: 24, className: 'mb-2' })}
       <span>{label}</span>
     </button>
   )

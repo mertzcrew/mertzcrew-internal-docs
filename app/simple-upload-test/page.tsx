@@ -1,11 +1,11 @@
 "use client"
 
 import React, { useState } from 'react'
-import { uploadFile } from '../../components/lib/fileUpload'
+import { uploadFile, FileUploadResult } from '../../components/lib/fileUpload'
 
 export default function SimpleUploadTestPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [uploadResult, setUploadResult] = useState<any>(null)
+  const [uploadResult, setUploadResult] = useState<FileUploadResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../../auth/[...nextauth]/route';
+import { authOptions } from '../../../../lib/auth';
 import Event from '@/models/Event';
 import { connectDB } from '@/components/lib/mongodb';
 
@@ -53,7 +53,7 @@ export async function PUT(request, { params }) {
 		end_date,
 		all_day,
 		privacy,
-		invited_users,
+		// invited_users, // Not used in current implementation
 		recurring,
 		color,
 		reminders,
@@ -236,7 +236,7 @@ export async function DELETE(request, { params }) {
     try {
       const body = await request.json();
       deleteType = body?.deleteType || 'single';
-    } catch (e) {
+    } catch {
       // No body sent, use default
       deleteType = 'single';
     }

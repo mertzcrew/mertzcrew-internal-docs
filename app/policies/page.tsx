@@ -39,7 +39,7 @@ interface Policy {
     color: string;
   }>;
   status: string;
-  pending_changes?: any;
+  pending_changes?: Record<string, unknown>;
   assigned_users?: Array<{
     _id: string;
     first_name: string;
@@ -184,7 +184,7 @@ export default function PoliciesPage() {
         setShowDeleteConfirm(false);
         setDeletePolicyId(null);
       }
-    } catch (err) {
+    } catch {
       setError('An error occurred while deleting the policy');
       setShowDeleteConfirm(false);
       setDeletePolicyId(null);

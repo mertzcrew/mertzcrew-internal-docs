@@ -2,10 +2,11 @@
 
 import React, { useState } from 'react'
 import { useFileUpload } from '../../components/lib/useFileUpload'
+import { FileUploadResult } from '../../components/lib/fileUpload'
 
 export default function FileUploadDebugPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [uploadResult, setUploadResult] = useState<any>(null)
+  const [uploadResult, setUploadResult] = useState<FileUploadResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const { uploadFile, isUploading, progress } = useFileUpload({

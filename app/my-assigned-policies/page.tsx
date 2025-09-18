@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { FileText, Calendar, User, Building2, Tag, ArrowLeft, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { FileText, User, Building2, Tag, ArrowLeft, Clock, CheckCircle } from 'lucide-react';
 import { POLICY_ORGANIZATIONS, DEPARTMENTS, formatDateMMDDYYYY } from '../../lib/validations';
 
 interface Policy {
@@ -138,7 +138,7 @@ export default function MyAssignedPoliciesPage() {
               <FileText size={48} className="text-muted mb-3" />
               <h4 className="text-muted">No Assigned Policies</h4>
               <p className="text-muted">
-                You don't have any policies assigned to you at the moment.
+                You don&apos;t have any policies assigned to you at the moment.
               </p>
             </div>
           ) : (
@@ -201,13 +201,13 @@ export default function MyAssignedPoliciesPage() {
                             <Building2 size={12} className="me-1" />
                           )}
                           <span>
-                            {(POLICY_ORGANIZATIONS.find((o: any) => o.value === policy.organization)?.display) || policy.organization}
+                            {(POLICY_ORGANIZATIONS.find((o) => o.value === policy.organization)?.display) || policy.organization}
                           </span>
                         </div>
                         {policy.department && (
                           <div className="mb-1">
                             <Building2 size={12} className="me-1" />
-                            {DEPARTMENTS.find((d: any) => d.value === policy.department)?.display || policy.department}
+                            {DEPARTMENTS.find((d) => d.value === policy.department)?.display || policy.department}
                           </div>
                         )}
                         <div className="mb-1">

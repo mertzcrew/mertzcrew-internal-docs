@@ -126,7 +126,7 @@ export default function PinnedPoliciesPage() {
               <Star size={64} className="text-muted mb-3" />
               <h4 className="text-muted">No Pinned Documents</h4>
               <p className="text-muted">
-                You haven't pinned any policies yet. Pin policies you want to access quickly!
+                You haven&apos;t pinned any policies yet. Pin policies you want to access quickly!
               </p>
               <button 
                 className="btn btn-primary"

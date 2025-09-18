@@ -17,7 +17,7 @@ interface Policy {
     color: string;
   }>;
   status: string;
-  pending_changes?: any;
+  pending_changes?: Record<string, unknown>;
   assigned_users?: Array<{
     _id: string;
     first_name: string;
@@ -52,7 +52,7 @@ export default function QualityPage() {
     if (status === 'authenticated') {
       fetchQualityPolicies();
     }
-  }, [status, session]);
+  }, [status, session, router]);
 
   useEffect(() => {
     // Filter quality policies based on search term

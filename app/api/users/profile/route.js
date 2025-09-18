@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../../auth/[...nextauth]/route';
+import { authOptions } from '../../../../lib/auth';
 import dbConnect from '../../../../components/lib/mongodb';
 import User from '../../../../models/User';
 
@@ -41,7 +41,7 @@ export async function GET(request) {
 }
 
 // PUT update user profile
-export async function PUT(request) {
+export async function PUT() {
   try {
     await dbConnect();
     const session = await getServerSession(authOptions);

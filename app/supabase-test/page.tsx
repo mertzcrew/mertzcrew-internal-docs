@@ -4,9 +4,11 @@ import React, { useState, useEffect } from 'react'
 import { supabase, STORAGE_BUCKET } from '../../components/lib/supabase'
 
 export default function SupabaseTestPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [bucketInfo, setBucketInfo] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [allBuckets, setAllBuckets] = useState<any[]>([])
 
   useEffect(() => {
@@ -138,7 +140,7 @@ export default function SupabaseTestPage() {
             ))}
           </ul>
           <p className="mt-2">
-            <strong>Note:</strong> The code is looking for a bucket named '{STORAGE_BUCKET}'. 
+            <strong>Note:</strong> The code is looking for a bucket named &apos;{STORAGE_BUCKET}&apos;. 
             If you want to use a different bucket, update the STORAGE_BUCKET constant in components/lib/supabase.ts
           </p>
         </div>
@@ -153,6 +155,7 @@ export default function SupabaseTestPage() {
             <div>
               <strong>Files:</strong>
               <ul>
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {bucketInfo.files.map((file: any, index: number) => (
                   <li key={index}>{file.name}</li>
                 ))}

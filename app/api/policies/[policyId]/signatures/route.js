@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../../../auth/[...nextauth]/route';
+import { authOptions } from '../../../../../lib/auth';
 import dbConnect from '../../../../../components/lib/mongodb';
 import Policy from '../../../../../models/Policy';
-import User from '../../../../../models/User';
 import mongoose from 'mongoose';
 
 const SignatureSchema = new mongoose.Schema({

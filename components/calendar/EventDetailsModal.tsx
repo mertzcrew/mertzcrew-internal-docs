@@ -32,7 +32,7 @@ interface Event {
     last_name: string;
     email: string;
   };
-  created_by_email: string;
+  created_by_email?: string;
   invited_users: Array<{
     user: {
       _id: string;

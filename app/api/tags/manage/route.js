@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../../auth/[...nextauth]/route';
+import { authOptions } from '../../../../lib/auth';
 import dbConnect from '../../../../components/lib/mongodb';
 import Tag from '../../../../models/Tag';
 
 // GET all tags for management
-export async function GET(request) {
+export async function GET() {
   try {
     await dbConnect();
     const session = await getServerSession(authOptions);

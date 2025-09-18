@@ -1,11 +1,11 @@
 "use client";
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+// import { useRouter } from 'next/navigation'; // TODO: Add navigation after reset
 import { Mail, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ForgotPassword() {
-  const router = useRouter();
+  // const router = useRouter(); // TODO: Use for navigation after password reset
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -62,7 +62,7 @@ export default function ForgotPassword() {
                   </div>
                   <h4 className="mb-2">Forgot Password?</h4>
                   <p className="text-muted mb-0">
-                    Enter your email address and we'll send you a link to reset your password.
+                    Enter your email address and we&apos;ll send you a link to reset your password.
                   </p>
                 </div>
 

@@ -13,7 +13,7 @@ interface Policy {
   organization: string;
   tags: string[];
   status: string;
-  pending_changes?: any;
+  pending_changes?: Record<string, unknown>;
   assigned_users?: Array<{
     _id: string;
     first_name: string;
@@ -48,7 +48,7 @@ export default function ProcessesPage() {
     if (status === 'authenticated') {
       fetchProcesses();
     }
-  }, [status, session]);
+  }, [status, session, router]);
 
   useEffect(() => {
     // Filter processes based on search term

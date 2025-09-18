@@ -55,7 +55,7 @@ export default function EditUserPage() {
           position: u.position || '',
           phone: u.phone || ''
         });
-      } catch (e) {
+      } catch {
         setError('Failed to load user');
       } finally {
         setLoading(false);

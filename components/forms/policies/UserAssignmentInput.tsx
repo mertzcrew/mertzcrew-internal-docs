@@ -194,7 +194,7 @@ export default function UserAssignmentInput({
           {/* No results message */}
           {showDropdown && searchTerm.trim().length >= 2 && searchResults.length === 0 && !isSearching && (
             <div className="position-absolute w-100 mt-1 user-assignment-dropdown p-3 text-center text-muted">
-              No users found matching "{searchTerm}"
+              No users found matching &quot;{searchTerm}&quot;
             </div>
           )}
         </div>

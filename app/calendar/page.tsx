@@ -20,6 +20,7 @@ interface Event {
     last_name: string;
     email: string;
   };
+  created_by_email?: string;
   invited_users: Array<{
     user: {
       _id: string;
@@ -30,7 +31,7 @@ interface Event {
     rsvp: 'pending' | 'accepted' | 'declined' | 'maybe';
   }>;
   color: string;
-  reminders: Array<{
+  reminders?: Array<{
     type: string;
     minutes_before: number;
   }>;
@@ -101,7 +102,7 @@ export default function CalendarPage() {
     if (session?.user?.email) {
       fetchEvents();
     }
-  }, [session?.user?.email]);
+  }, [session?.user?.email, fetchEvents]);
 
   // Calendar navigation
   const goToPreviousMonth = () => {

@@ -6,14 +6,15 @@ import React, { useState, useEffect } from 'react';
 export default function WheelDemo() {
   console.log('WheelDemo component rendering'); // Debug log
   
-  const [selectedItem, setSelectedItem] = useState<string>('');
-  const [selectedIndex, setSelectedIndex] = useState<number>(-1);
+  // const [selectedItem, setSelectedItem] = useState<string>(''); // For future wheel functionality
+  // const [selectedIndex, setSelectedIndex] = useState<number>(-1); // For future wheel functionality
 
   useEffect(() => {
     console.log('WheelDemo component mounted'); // Debug log
   }, []);
 
   // Sample items for the wheel
+  /*
   const wheelItems = [
     'John Doe',
     'Jane Smith', 
@@ -24,12 +25,15 @@ export default function WheelDemo() {
     'Edward Miller',
     'Fiona Garcia'
   ];
+  */
 
+  /*
   const handleSpinEnd = (item: string, index: number) => {
     setSelectedItem(item);
     setSelectedIndex(index);
     console.log(`Wheel landed on: ${item} (index: ${index})`);
   };
+  */
 
   return (
     <div className="container py-5">
@@ -47,6 +51,7 @@ export default function WheelDemo() {
             size={400}
           /> */}
           
+          {/* Future wheel result display
           {selectedItem && (
             <div className="mt-4 p-3 bg-light rounded">
               <h4>Result:</h4>
@@ -58,13 +63,14 @@ export default function WheelDemo() {
               </p>
             </div>
           )}
+          */}
           
           <div className="mt-4">
             <h5>How it works:</h5>
             <ul className="text-start">
               <li>The orange triangle points down (π/2 radians)</li>
               <li>The selection logic calculates which slice the triangle is touching</li>
-              <li>The wheel rotates clockwise, and the selection is based on the triangle's position</li>
+              <li>The wheel rotates clockwise, and the selection is based on the triangle&apos;s position</li>
               <li>No more off-by-one errors - it selects exactly where the triangle points</li>
             </ul>
           </div>

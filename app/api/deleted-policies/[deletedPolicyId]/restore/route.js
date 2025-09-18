@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../../../auth/[...nextauth]/route';
+import { authOptions } from '../../../../../lib/auth';
 import dbConnect from '../../../../../components/lib/mongodb';
 import DeletedPolicy from '../../../../../models/DeletedPolicy';
 import Policy from '../../../../../models/Policy';

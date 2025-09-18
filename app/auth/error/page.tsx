@@ -2,6 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import { Building2, AlertTriangle } from 'lucide-react';
+import Link from 'next/link';
 
 export default function AuthError() {
   const searchParams = useSearchParams();
@@ -72,12 +73,12 @@ export default function AuthError() {
                   >
                     Try Again
                   </a>
-                  <a
+                  <Link
                     href="/"
                     className="btn btn-outline-secondary"
                   >
                     Go to Home
-                  </a>
+                  </Link>
                 </div>
 
                 {/* Footer */}

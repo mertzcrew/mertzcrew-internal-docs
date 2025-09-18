@@ -3,7 +3,7 @@ import dbConnect from '../../../components/lib/mongodb.js';
 import Notification from '../../../models/Notification.js';
 import User from '../../../models/User.js';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../auth/[...nextauth]/route.js';
+import { authOptions } from '../../../lib/auth';
 
 // GET /api/notifications - Fetch notifications for the authenticated user
 export async function GET(request) {

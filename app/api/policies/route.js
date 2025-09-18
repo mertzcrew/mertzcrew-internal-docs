@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]/route';
+import { authOptions } from '../../../lib/auth';
 import dbConnect from '../../../components/lib/mongodb';
 import Policy from '../../../models/Policy';
 import User from '../../../models/User';
@@ -78,7 +78,6 @@ export async function POST(request) {
 
     // Check if user has permission to create policies
     // All authenticated users can create draft policies, only admins can publish directly
-    const canCreateDraft = true; // All users can create drafts
     const canPublishDirectly = user.permissions?.includes('create_policy') || user.role === 'admin';
     
     // If user is trying to publish directly but doesn't have permission, block it
