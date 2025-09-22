@@ -12,6 +12,16 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "Mertz Control Room - Employee Resource Center",
   description: "Central hub for Mertzcrew employee resources, policies, training, and documentation",
+  icons: {
+    icon: [
+      {
+        url: '/favicon-v2.ico',
+        sizes: 'any',
+      },
+    ],
+    shortcut: '/favicon-v2.ico',
+    apple: '/favicon-v2.ico',
+  },
 }
 
 export default function RootLayout({
@@ -21,6 +31,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" type="image/x-icon" href="/favicon-v2.ico" />
+        <link rel="shortcut icon" type="image/x-icon" href="/favicon-v2.ico" />
+      </head>
       <body className={inter.className}>
         <AuthSessionProvider>
           <RootLayoutContent>
