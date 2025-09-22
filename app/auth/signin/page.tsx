@@ -71,7 +71,7 @@ export default function SignIn() {
                 )}
 
                 {/* Sign In Form */}
-                <form onSubmit={handleSubmit}>
+                {/* <form onSubmit={handleSubmit}>
                   <div className="mb-3">
                     <label htmlFor="email" className="form-label fw-semibold" style={{ color: '#000000' }}>
                       Email
@@ -93,8 +93,8 @@ export default function SignIn() {
                       <label htmlFor="password" className="form-label fw-semibold mb-0" style={{ color: '#000000' }}>
                         Password
                       </label>
-                      <a href="/forgot-password" className="text-decoration-none" style={{ color: '#007bff' }}>
-                        Forgot Password?
+                      <a href="/forgot-password" className="text-decoration-none" style={{ color: '#007bff' }}> */}
+                        {/* Forgot Password?
                       </a>
                     </div>
                     <div className="position-relative">
@@ -114,8 +114,8 @@ export default function SignIn() {
                         onClick={() => setShowPassword(!showPassword)}
                         style={{ zIndex: 10 }}
                       >
-                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                      </button>
+                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />} */}
+                      {/* </button>
                     </div>
                   </div>
 
@@ -134,13 +134,13 @@ export default function SignIn() {
                       'Sign In'
                     )}
                   </button>
-                </form>
+                </form> */}
 
-                <div className="d-flex align-items-center my-3">
+                {/* <div className="d-flex align-items-center my-3">
                   <div className="flex-grow-1 border-top" />
                   <span className="mx-2 text-muted small">OR</span>
                   <div className="flex-grow-1 border-top" />
-                </div>
+                </div> */}
 
                 <button
                   type="button"
@@ -164,7 +164,7 @@ export default function SignIn() {
                 {/* Footer */}
                 <div className="text-center mt-4">
                   <p className="text-muted small mb-0">
-                    Need help? Contact your Administrator
+                    Need help? Contact Development Team
                   </p>
                 </div>
               </div>
