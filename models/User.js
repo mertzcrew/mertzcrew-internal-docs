@@ -36,7 +36,7 @@ const UserSchema = new mongoose.Schema({
   role: {
     type: String,
     enum: ['admin', 'manager', 'associate'],
-    default: 'employee'
+    default: 'associate'
   },
   permissions: [{
     type: String,
@@ -204,3 +204,5 @@ UserSchema.statics.findByDepartment = function(department) {
 const User = mongoose.models.User || mongoose.model('User', UserSchema);
 
 export default User;
+
+
