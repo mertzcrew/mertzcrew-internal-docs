@@ -163,16 +163,23 @@ export default function CalendarPage() {
 
   // Get events for a specific date
   const getEventsForDate = (date: Date) => {
-    const dateString = date.toDateString();
+    const targetDate = new Date(date);
+    // Normalize to start of day for comparison
+    targetDate.setHours(0, 0, 0, 0);
     
     return events.filter(event => {
-      const eventDate = new Date(event.start_date);
-      const eventDateString = eventDate.toDateString();
-      
       // Skip deleted events
       if (event.is_deleted) return false;
       
-      return eventDateString === dateString;
+      const startDate = new Date(event.start_date);
+      const endDate = new Date(event.end_date);
+      
+      // Normalize dates to start of day for comparison
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(0, 0, 0, 0); // Normalize end date to start of day for comparison
+      
+      // Check if the target date falls within the event's date range (inclusive)
+      return targetDate >= startDate && targetDate <= endDate;
     });
   };
 
@@ -302,24 +309,51 @@ export default function CalendarPage() {
                 
                 {/* Events for this day */}
                 <div className="calendar-day-events">
-                  {dayEvents.slice(0, 3).map(event => (
-                    <div
-                      key={event._id}
-                      className="calendar-event"
-                      onClick={(domEvent) => {
-                        domEvent.stopPropagation();
-                        handleEventClick(event);
-                      }}
-                      style={{
-                        backgroundColor: event.color + '20',
-                        color: event.color,
-                        border: `1px solid ${event.color}`
-                      }}
-                      title={event.title}
-                    >
-                      {event.title}
-                    </div>
-                  ))}
+                  {dayEvents.slice(0, 3).map(event => {
+                    const startDate = new Date(event.start_date);
+                    const endDate = new Date(event.end_date);
+                    startDate.setHours(0, 0, 0, 0);
+                    endDate.setHours(0, 0, 0, 0);
+                    
+                    const isMultiDay = startDate.getTime() !== endDate.getTime();
+                    const currentDayTime = new Date(day);
+                    currentDayTime.setHours(0, 0, 0, 0);
+                    
+                    const isStartDay = startDate.getTime() === currentDayTime.getTime();
+                    const isEndDay = endDate.getTime() === currentDayTime.getTime();
+                    const isMiddleDay = currentDayTime > startDate && currentDayTime < endDate;
+                    
+                    let eventTitle = event.title;
+                    if (isMultiDay) {
+                      if (isStartDay) {
+                        eventTitle = `${event.title} (Start)`;
+                      } else if (isEndDay) {
+                        eventTitle = `${event.title} (End)`;
+                      } else if (isMiddleDay) {
+                        eventTitle = `${event.title} (Cont.)`;
+                      }
+                    }
+                    
+                    return (
+                      <div
+                        key={`${event._id}-${day.getTime()}`}
+                        className={`calendar-event ${isMultiDay ? 'multi-day-event' : ''} ${isStartDay ? 'start-day' : ''} ${isEndDay ? 'end-day' : ''} ${isMiddleDay ? 'middle-day' : ''}`}
+                        onClick={(domEvent) => {
+                          domEvent.stopPropagation();
+                          handleEventClick(event);
+                        }}
+                        style={{
+                          backgroundColor: event.color + (isMultiDay ? '30' : '20'),
+                          color: event.color,
+                          border: `1px solid ${event.color}`,
+                          borderStyle: isMultiDay ? 'dashed' : 'solid'
+                        }}
+                        title={`${event.title}${isMultiDay ? ` (${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()})` : ''}`}
+                      >
+                        {eventTitle}
+                      </div>
+                    );
+                  })}
                   {dayEvents.length > 3 && (
                     <div className="calendar-event-more">
                       +{dayEvents.length - 3} more
@@ -431,6 +465,30 @@ export default function CalendarPage() {
 
         .calendar-event:hover {
           opacity: 0.8;
+        }
+
+        /* Multi-day event styles */
+        .calendar-event.multi-day-event {
+          font-weight: 500;
+          position: relative;
+        }
+
+        .calendar-event.start-day {
+          border-top-right-radius: 0;
+          border-bottom-right-radius: 0;
+          border-right: none;
+        }
+
+        .calendar-event.middle-day {
+          border-radius: 0;
+          border-left: none;
+          border-right: none;
+        }
+
+        .calendar-event.end-day {
+          border-top-left-radius: 0;
+          border-bottom-left-radius: 0;
+          border-left: none;
         }
 
         .calendar-event-more {
