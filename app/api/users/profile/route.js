@@ -41,7 +41,7 @@ export async function GET(request) {
 }
 
 // PUT update user profile
-export async function PUT() {
+export async function PUT(request) {
   try {
     await dbConnect();
     const session = await getServerSession(authOptions);
