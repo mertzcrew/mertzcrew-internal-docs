@@ -13,7 +13,7 @@ import {
 
 interface FormData {
   email: string;
-  password: string;
+  password?: string;
   first_name: string;
   last_name: string;
   role: string;
@@ -38,7 +38,7 @@ export default function AddUserForm({ editMode = false, initialData, userId }: A
   
   const [formData, setFormData] = useState<FormData>({
     email: '',
-    password: '',
+    password: editMode ? undefined : '',
     first_name: '',
     last_name: '',
     role: 'associate',
@@ -54,7 +54,7 @@ export default function AddUserForm({ editMode = false, initialData, userId }: A
       setFormData(prev => ({
         ...prev,
         email: initialData.email ?? '',
-        password: '', // never prefill password
+        // password field not included in edit mode
         first_name: initialData.first_name ?? '',
         last_name: initialData.last_name ?? '',
         role: initialData.role ?? 'associate',
@@ -103,7 +103,7 @@ export default function AddUserForm({ editMode = false, initialData, userId }: A
       // Validate (for edits, password can be empty)
       const toValidate = { ...formData };
       if (editMode) delete (toValidate as any).password;
-      const v = validateUser(toValidate);
+      const v = validateUser(toValidate, editMode);
       if (!v.isValid) {
         setError(Object.values(v.errors)[0] || 'Please fix validation errors');
         setIsSubmitting(false);
@@ -111,7 +111,7 @@ export default function AddUserForm({ editMode = false, initialData, userId }: A
       }
 
       const payload: any = { ...formData };
-      if (editMode && !payload.password) delete payload.password;
+      if (editMode) delete payload.password; // Never send password in edit mode
 
       const res = await fetch(editMode && userId ? `/api/users/${userId}` : '/api/users', {
         method: editMode ? 'PATCH' : 'POST',
@@ -197,8 +197,8 @@ export default function AddUserForm({ editMode = false, initialData, userId }: A
         </div>
       </div>
 
-      <div className="row">
-        <div className="col-md-6 mb-3">
+            <div className="row">
+        <div className={editMode ? "col-md-12 mb-3" : "col-md-6 mb-3"}>
           <label htmlFor="email" className="form-label">
             Email <span className="text-danger">*</span>
           </label>
@@ -213,23 +213,26 @@ export default function AddUserForm({ editMode = false, initialData, userId }: A
           />
         </div>
 
-        <div className="col-md-6 mb-3">
-          <label htmlFor="password" className="form-label">
-            {editMode ? 'Create New Password' : (<><span>Password </span><span className="text-danger">*</span></>)}
-          </label>
-          <input
-            type="password"
-            className="form-control"
-            id="password"
-            name="password"
-            value={formData.password}
-            onChange={handleInputChange}
-            {...(editMode ? {} : { required: true, minLength: 8 })}
-          />
-          <div className="form-text">
-            {editMode ? 'Leave blank to keep the current password. Set a new password to change it.' : 'Password must be at least 8 characters long'}
+        {!editMode && (
+          <div className="col-md-6 mb-3">
+            <label htmlFor="password" className="form-label">
+              Password <span className="text-danger">*</span>
+            </label>
+            <input
+              type="password"
+              className="form-control"
+              id="password"
+              name="password"
+              value={formData.password}
+              onChange={handleInputChange}
+              required
+              minLength={8}
+            />
+            <div className="form-text">
+              Password must be at least 8 characters long
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <div className="row">

@@ -45,7 +45,6 @@ export default function EditUserPage() {
         const u = data.data;
         setFormData({
           email: u.email,
-          password: '',
           first_name: u.first_name,
           last_name: u.last_name,
           role: u.role,

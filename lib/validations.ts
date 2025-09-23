@@ -187,7 +187,7 @@ export function validateUser(data: {
     organization?: string;
     department?: string;
     phone?: string;
-}): { isValid: boolean; errors: Record<string, string> } {
+}, isEdit: boolean = false): { isValid: boolean; errors: Record<string, string> } {
     const errors: Record<string, string> = {};
 
     // Email validation
@@ -197,10 +197,15 @@ export function validateUser(data: {
         errors.email = 'Please enter a valid email address';
     }
 
-    // Password validation
-    if (!data.password?.trim()) {
-        errors.password = 'Password is required';
-    } else if (!isValidPassword(data.password)) {
+    // Password validation (only required for new users, not edits)
+    if (!isEdit) {
+        if (!data.password?.trim()) {
+            errors.password = 'Password is required';
+        } else if (!isValidPassword(data.password)) {
+            errors.password = 'Password must be at least 8 characters long';
+        }
+    } else if (data.password && !isValidPassword(data.password)) {
+        // For edits, only validate password if it's provided
         errors.password = 'Password must be at least 8 characters long';
     }
 
