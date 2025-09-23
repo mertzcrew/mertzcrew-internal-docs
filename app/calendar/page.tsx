@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import EventModal from '../../components/calendar/EventModal';
 import EventDetailsModal from '../../components/calendar/EventDetailsModal';
@@ -75,7 +75,7 @@ export default function CalendarPage() {
   };
 
   // Fetch events
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     if (!session?.user?.email) return;
 
     try {
@@ -95,14 +95,14 @@ export default function CalendarPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [session?.user?.email]);
 
   // Fetch events when session changes
   useEffect(() => {
     if (session?.user?.email) {
       fetchEvents();
     }
-  }, [session?.user?.email, fetchEvents]);
+  }, [session?.user?.email]);
 
   // Calendar navigation
   const goToPreviousMonth = () => {
