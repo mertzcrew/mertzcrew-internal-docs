@@ -18,7 +18,7 @@ async function createBucket() {
   try {
     console.log('Creating documents bucket...')
     
-    const { data, error } = await supabase.storage.createBucket('documents', {
+    const { data, error } = await supabase.storage.createBucket('Control Room', {
       public: true,
       allowedMimeTypes: [
         'application/pdf',

@@ -9,8 +9,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-// Storage bucket name - you can change this to match your bucket name
-export const STORAGE_BUCKET = 'documents'
+export const STORAGE_BUCKET = 'Control Room'
 
 // Debug Supabase configuration
 console.log('Supabase configuration:')
